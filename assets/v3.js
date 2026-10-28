@@ -186,15 +186,26 @@ Object.assign(launches,d.launches);save(KEY_NEW,launches);for(const x of d.delis
 for(const x of d.history||[])if(x.platform&&x.quarter)history=[x,...history.filter(v=>v.platform!==x.platform||v.quarter!==x.quarter)];save(KEY_HIST,history);
 year=d.year;platform=d.platform;$('v23Year').value=year;$('v2Platform').value=platform;updateQuarter();await refresh();showLaunches();renderDelisted();analyze();msg('已恢复'+year+'年的月度订单及上下架记录','good');}
 function downRecords(){return Object.values(delisted).filter(x=>x.platform===platform).sort((a,b)=>b.date.localeCompare(a.date)||a.id.localeCompare(b.id,undefined,{numeric:true}));}
-let editKey='';
-function resetDown(){$('v23DelistForm').reset();$('v23DelistDate').value=new Date().toLocaleDateString('en-CA');$('v23SaveDelist').textContent='保存下架记录';$('v23CancelDelist').hidden=true;editKey='';}
-function editDown(r){editKey=downKey(r.platform,r.type,r.id);$('v23DelistType').value=r.type;$('v23DelistId').value=r.id;$('v23DelistName').value=r.name||'';$('v23DelistDate').value=r.date;$('v23DelistNote').value=r.note||'';$('v23SaveDelist').textContent='更新记录';$('v23CancelDelist').hidden=false;$('v23-delisted').scrollIntoView({behavior:'smooth',block:'start'});}
-function renderDelisted(){const a=downRecords(),q=$('v23DelistSearch').value.toLowerCase().trim(),t=$('v23DelistFilter').value;const rows=a.filter(x=>(!t||x.type===t)&&(!q||[x.id,x.name,x.note].some(v=>String(v||'').toLowerCase().includes(q))));
-$('v23DelistedCount').textContent='已记录 '+a.length+' 个';
-$('v23DelistedRows').innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.id)+'</b></td><td>'+esc(x.name||'—')+'</td><td>'+esc(x.type)+'</td><td>'+esc(x.date)+'</td><td>'+esc(x.note||'—')+'</td><td><button type="button" class="v23-row-button" data-edit="'+esc(downKey(x.platform,x.type,x.id))+'">编辑</button><button type="button" class="v23-row-button warn" data-delete="'+esc(downKey(x.platform,x.type,x.id))+'">删除</button></td></tr>').join('')||'<tr><td colspan="6" class="v2-empty">暂无已下架记录</td></tr>';}
-function saveDown(e){e.preventDefault();const type=$('v23DelistType').value,id=$('v23DelistId').value.trim(),name=$('v23DelistName').value.trim(),dt=$('v23DelistDate').value,note=$('v23DelistNote').value.trim();if(!/^\d+$/.test(id)||!dt){msg('请填写数字商品ID和实际下架日期','danger');return;}
-const k=downKey(platform,type,id);if(!editKey&&delisted[k]&&!confirm('该商品已经登记，是否更新？'))return;if(editKey&&editKey!==k)delete delisted[editKey];
-delisted[k]={platform,type,id,name,date:dt,note};save(KEY_DOWN,delisted);resetDown();renderDelisted();analyze();msg('已记录商品'+id+'，后续季度将排除该商品','good');}
+function renderDelisted(){
+ const all=downRecords(),term=$('v23DelistSearch').value.toLowerCase().trim(),type=$('v23DelistFilter').value;
+ const rows=all.filter(x=>(!type||x.type===type)&&(!term||[x.id,x.name,x.note].some(v=>String(v||'').toLowerCase().includes(term))));
+ $('v23DelistedCount').textContent='已记录 '+all.length+' 个';
+ $('v23DelistedRows').innerHTML=rows.map(x=>'<tr><td><b>'+esc(x.id)+'</b></td><td>'+esc(x.name||'—')+'</td><td>'+esc(x.type)+'</td><td>'+esc(x.date)+'</td><td>'+esc(x.note||'—')+'</td><td><button type="button" class="v23-row-button warn" data-undo-down="'+esc(downKey(x.platform,x.type,x.id))+'">撤销勾选</button></td></tr>').join('')||'<tr><td colspan="6" class="v2-empty">暂无已下架记录；在建议下架商品中勾选后会自动出现在这里。</td></tr>';
+}
+function recordDelisted(key){
+ if(!results?.formal){msg('当前季度数据未通过校验，不能登记正式下架。','danger');return;}
+ const item=results.suggested.find(z=>downKey(platform,z.type,z.id)===key);
+ if(!item)return;
+ if(delisted[key])return;
+ const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ delisted[key]={platform,type:item.type,id:item.id,name:item.name,date:today,note:'从'+results.q+'季度建议下架名单勾选登记',analysisQuarter:results.q,qty:item.qty,activeDays:item.activeDays};
+ if(!save(KEY_DOWN,delisted)){delete delisted[key];return;}
+ renderDelisted();analyze();msg('已归档：'+item.name+'（'+item.id+'），已从下架候选名单移除。','good');
+}
+function undoDelisted(key){
+ if(!delisted[key]||!confirm('撤销该商品的已下架记录？撤销后可能重新出现在下架候选名单中。'))return;
+ delete delisted[key];save(KEY_DOWN,delisted);renderDelisted();analyze();msg('已撤销该商品的下架登记。','good');
+}
 function analyze(){const q=$('v2Quarter').value,r=qrange(q);if(!r)return;const errors=[],blocks=[],warnings=[],records=[],sources=[];
 for(const m of r.months){const slot=activeMonth(m);if(!slot?.files?.length){blocks.push(m+'月未上传');continue;}for(const f of slot.files){sources.push(f.name);records.push(...f.rows);errors.push(...f.issues);}}
 const today=new Date().toISOString().slice(0,10);if(r.end>=today)blocks.push('当前季度尚未结束，不能输出正式下架名单');if(errors.some(x=>x.fatal))blocks.push('订单文件存在关键字段异常');if(!records.length)blocks.push('本季度无可用订单');
@@ -238,7 +249,7 @@ $('v2ErrorRows').innerHTML=x.errors.slice(0,100).map(e=>'<tr><td>'+(e.fatal?'错
 $('v2Download').disabled=!x.formal||!x.suggested.length;$('v2Save').disabled=!x.formal;drawHistory();}
 function drawCandidates(){if(!results)return;const t=$('v2FilterCat').value,search=$('v2FilterText').value.toLowerCase().trim();
 const a=results.suggested.filter(x=>(!t||x.type===t)&&(!search||x.id.includes(search)||x.name.toLowerCase().includes(search)));$('v2CandidateCount').textContent=a.length+'条';
-$('v2CandidateRows').innerHTML=a.map(v=>'<tr><td><span class="v2-label '+(results.formal?'a':'hold')+'">'+(results.formal?'建议下架':'待核验')+'</span></td><td><b>'+esc(v.name)+'</b><br><small>ID '+esc(v.id)+'</small></td><td>'+esc(v.type)+'</td><td>'+format(v.qty)+'</td><td>'+v.activeDays+'/'+v.saleDays+'（'+ratio(v.activeRate)+'）</td><td>'+v.rankQty+'/'+results.stats[v.type].eligible+'</td><td>'+v.rankActive+'/'+results.stats[v.type].eligible+'</td><td>'+format(v.last)+'</td><td>'+esc(v.reason)+'</td><td><button type="button" class="v23-row-button" data-to-delisted="'+esc(downKey(platform,v.type,v.id))+'">登记已下架</button></td></tr>').join('')||'<tr><td colspan="10" class="v2-empty">没有满足条件的下架商品</td></tr>';}
+$('v2CandidateRows').innerHTML=a.map(v=>'<tr><td><span class="v2-label '+(results.formal?'a':'hold')+'">'+(results.formal?'建议下架':'待核验')+'</span></td><td><b>'+esc(v.name)+'</b><br><small>ID '+esc(v.id)+'</small></td><td>'+esc(v.type)+'</td><td>'+format(v.qty)+'</td><td>'+v.activeDays+'/'+v.saleDays+'（'+ratio(v.activeRate)+'）</td><td>'+v.rankQty+'/'+results.stats[v.type].eligible+'</td><td>'+v.rankActive+'/'+results.stats[v.type].eligible+'</td><td>'+format(v.last)+'</td><td>'+esc(v.reason)+'</td><td><label class="v23-check-done"><input type="checkbox" data-down-checkbox="'+esc(downKey(platform,v.type,v.id))+'" '+(results.formal?'':'disabled title="数据未通过校验"')+' /> 已下架</label></td></tr>').join('')||'<tr><td colspan="10" class="v2-empty">没有满足条件的下架商品</td></tr>';}
 function exportCandidates(){if(!results?.formal)return;toCsv('建议下架_'+platform+'_'+results.q+'.csv',['平台','季度','品类','商品ID','名称','季度销量','成交天数','成交活跃度','销量排名','活跃度排名','近30天','前60天','原因'],results.suggested.map(v=>[platform,results.q,v.type,v.id,v.name,v.qty,v.activeDays,ratio(v.activeRate),v.rankQty,v.rankActive,v.last,v.prev,v.reason]));}
 function exportIssues(){if(!results)return;toCsv('数据异常_'+platform+'_'+results.q+'.csv',['是否阻断','异常','来源','行号','内容'],results.errors.map(e=>[e.fatal?'是':'否',e.kind,e.source,e.line,e.reason]));}
 function exportNew(){let a=[];for(const [k,v] of Object.entries(launches)){const [p,q]=k.split('|');if(p!==platform)continue;for(const t of TYPES)for(const id of v[t]||[])a.push([p,q,t,id]);}toCsv('季度上新ID_'+platform+'.csv',['平台','季度','品类','商品ID'],a);}
@@ -249,7 +260,7 @@ function drawHistory(){$('v2History').innerHTML=history.filter(x=>x.platform===p
 function updateQuarter(){const q=Number(($('v2Quarter').value||'').slice(-1))||1;$('v2Quarter').innerHTML=Array.from({length:4},(_,i)=>'<option value="'+year+'-Q'+(i+1)+'">'+year+'年第'+(i+1)+'季度</option>').join('');$('v2Quarter').value=year+'-Q'+q;}
 async function start(){try{db=await openDb();}catch(e){msg(e.message+'，请启用浏览器网站存储','danger');return;}
 const now=new Date();year=+$('v23Year').value||2026;month=now.getFullYear()===year?now.getMonth()+1:1;platform=$('v2Platform').value;
-$('v2Quarter').value=year+'-Q'+Math.ceil(month/3);await refresh();showLaunches();renderDelisted();resetDown();analyze();
+$('v2Quarter').value=year+'-Q'+Math.ceil(month/3);await refresh();showLaunches();renderDelisted();analyze();
 $('v23Months').addEventListener('click',e=>{const x=e.target.closest('[data-month]');if(!x)return;month=+x.dataset.month;drawMonths();});
 $('v23Year').addEventListener('change',async()=>{const n=+$('v23Year').value;if(!Number.isInteger(n)||n<2020||n>2100){msg('年份范围为2020至2100','danger');return;}year=n;updateQuarter();await refresh();showLaunches();analyze();});
 $('v2Platform').addEventListener('change',async()=>{platform=$('v2Platform').value;await refresh();showLaunches();renderDelisted();analyze();});
@@ -265,11 +276,11 @@ $('v23SaveNew').addEventListener('click',storeLaunches);$('v23ExportNew').addEve
 $('v2FilterText').addEventListener('input',drawCandidates);$('v2FilterCat').addEventListener('change',drawCandidates);
 $('v2Download').addEventListener('click',exportCandidates);$('v2Save').addEventListener('click',()=>storeHistory());
 $('v2DownloadIssues').addEventListener('click',exportIssues);
-$('v23DelistForm').addEventListener('submit',saveDown);$('v23CancelDelist').addEventListener('click',resetDown);
 $('v23DelistSearch').addEventListener('input',renderDelisted);$('v23DelistFilter').addEventListener('change',renderDelisted);
 $('v23ExportDelisted').addEventListener('click',exportDown);
-$('v23DelistedRows').addEventListener('click',e=>{const b=e.target.closest('[data-edit]'),d=e.target.closest('[data-delete]');if(b&&delisted[b.dataset.edit])editDown(delisted[b.dataset.edit]);if(d&&delisted[d.dataset.delete]&&confirm('删除下架记录？')){delete delisted[d.dataset.delete];save(KEY_DOWN,delisted);renderDelisted();analyze();}});
-$('v2CandidateRows').addEventListener('click',e=>{const b=e.target.closest('[data-to-delisted]');if(!b||!results)return;const x=results.suggested.find(z=>downKey(platform,z.type,z.id)===b.dataset.toDelisted);if(x)editDown({platform,type:x.type,id:x.id,name:x.name,date:new Date().toLocaleDateString('en-CA'),note:''});});
+$('v23DelistedRows').addEventListener('click',e=>{const b=e.target.closest('[data-undo-down]');if(b)undoDelisted(b.dataset.undoDown);});
+$('v2CandidateRows').addEventListener('change',e=>{const b=e.target.closest('[data-down-checkbox]');if(b&&b.checked)recordDelisted(b.dataset.downCheckbox);});
+$('v23Reparse').addEventListener('click',reparseStoredFiles);
 }
 start().catch(e=>msg('初始化失败：'+e.message,'danger'));
 })();
