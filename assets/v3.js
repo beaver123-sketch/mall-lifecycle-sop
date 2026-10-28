@@ -123,7 +123,13 @@ const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.t
 const item={...g,activeDays:g.dates.size,activeRate:g.dates.size/r.days,saleDays:r.days,rankQty:0,rankActive:0,reason,grade:'C'};(reason?excluded:eligible).push(item);}
 const stats={},suggested=[],watch=[];for(const type of TYPES){const xs=eligible.filter(x=>x.type===type),count=Math.ceil(xs.length*.25),tie=(a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true});
 const a=xs.slice().sort((x,y)=>x.qty-y.qty||tie(x,y)),b=xs.slice().sort((x,y)=>x.activeRate-y.activeRate||tie(x,y));a.forEach((x,i)=>x.rankQty=i+1);b.forEach((x,i)=>x.rankActive=i+1);
-const lq=new Set(a.slice(0,count).map(x=>x.id)),la=new Set(b.slice(0,count).map(x=>x.id));const good=[];
+const strictLow=(arr,k)=>{
+  if(!count)return new Set();
+  const boundary=arr[count-1][k];
+  const crosses=arr.some((x,i)=>i>=count&&x[k]===boundary);
+  return new Set(arr.slice(0,count).filter(x=>!crosses||x[k]<boundary).map(x=>x.id));
+ };
+ const lq=strictLow(a,'qty'),la=strictLow(b,'activeRate');const good=[];
 for(const x of xs){const mean=x.prev/2,rebound=x.last>=5&&(mean===0||x.last>=mean*1.2),both=lq.has(x.id)&&la.has(x.id);
 if(both&&!rebound){x.grade='A';x.reason='季度销量和成交活跃度均处后25%，近期没有明显回升';good.push(x);}
 else if(both||lq.has(x.id)||la.has(x.id)){x.grade='B';x.reason=rebound?'近期需求明显回升':lq.has(x.id)?'仅季度销量后25%':'仅成交活跃度后25%';watch.push(x);}}
