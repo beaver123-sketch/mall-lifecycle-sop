@@ -70,3 +70,23 @@ body{background:#f6f8fb!important}
 .v23-months{margin-bottom:0}
 @media(max-width:1030px){.v23-months{grid-template-columns:repeat(4,1fr)}.v23-new-grid{grid-template-columns:repeat(3,1fr)}.v23-delist-form{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:630px){.v23-months{grid-template-columns:repeat(3,1fr)}.v23-new-grid{grid-template-columns:1fr 1fr}.v23-delist-form{grid-template-columns:1fr}.v23-delist-form .v23-delist-notes{grid-column:auto}.v23-toolbar #v2Run{margin-left:0}.v23-backup .v2-muted{margin-left:0}}
+
+/* 2026-10-28: compact import diagnostics and checkbox history */
+.v23-file-diagnostics{margin:10px 0 4px;border:1px solid #e2eaf4;background:#fbfcfe;padding:12px 14px;border-radius:9px}
+.v23-file-diagnostics .v2-section-title{margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.v23-file-diagnostics .v2-section-title strong{font-size:13px;color:#355070}
+.v23-parse-details{display:grid;gap:6px;max-height:360px;overflow:auto}
+.v23-import-file{background:#fff;border:1px solid #e6edf5;border-radius:7px;padding:8px 11px}
+.v23-import-file summary{display:flex;align-items:center;gap:9px;justify-content:space-between;cursor:pointer;font-size:12px;color:#465e79}
+.v23-import-file summary strong{overflow-wrap:anywhere;font-size:12px}
+.v23-import-file summary span{white-space:nowrap;font-size:11px}
+.v23-import-bad{color:#bc4a58}.v23-import-good{color:#16815b}
+.v23-import-info{font-size:11px;color:#677b91;line-height:1.7;padding:7px 0 2px}
+.v23-import-info ul{margin:5px 0 0 16px;padding:0}
+.v23-import-info li{color:#a74c56;word-break:break-word}
+.v23-guidance{background:#f4f8ff;border:1px solid #e1eafa;border-radius:8px;padding:12px 15px;color:#4c6788;font-size:12px;line-height:1.7;margin:12px 0}
+.v23-guidance b{color:#2d5eab}
+.v23-check-done{display:inline-flex;align-items:center;gap:6px;color:#3268b1;font-size:12px;cursor:pointer;white-space:nowrap}
+.v23-check-done input{width:16px;height:16px;accent-color:#2f65c6;cursor:pointer}
+.v23-check-done input:disabled{cursor:not-allowed;opacity:.5}
+@media(max-width:650px){.v23-import-file summary{align-items:flex-start;flex-direction:column}.v23-import-file summary span{white-space:normal}}
