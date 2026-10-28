@@ -5,7 +5,8 @@
 ## 使用及部署
 
 - 使用 GitHub Pages 静态部署，无需 Vercel。仓库根目录 `index.html` 即入口。
-- 在仓库 Settings → Pages → Build and deployment 选择 `Deploy from a branch`，分支 `main`、路径 `/(root)`。
+- **首次发布需操作一次：**打开仓库 `Settings → Pages`，在 `Build and deployment → Source` 选择 **`GitHub Actions`**（不是 `Deploy from a branch`）。
+- 本仓库已有 `.github/workflows/deploy-pages.yml`。启用 Pages 后，在 `Actions → Deploy Mall Lifecycle SOP to GitHub Pages` 页面点击 `Run workflow`，或者在失败的运行记录中选择 `Re-run jobs`，即可完成首次发布。
 - 以后修改 `index.html` 提交到 `main`，等待 GitHub Pages 发布后刷新网页；如浏览器缓存旧版，可强制刷新。
 - 审核结果目前只保存在**当前浏览器 localStorage**，不自动提交到 GitHub。操作后请定期点击「备份审核JSON」，在其他设备可用「恢复审核JSON」导入。
 - 导出审核CSV用于运营核查。尚未接入真实Excel导入、自动数据核验、动态近90天指标与真实下架接口。
