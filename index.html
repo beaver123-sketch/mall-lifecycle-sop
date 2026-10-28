@@ -659,16 +659,17 @@ header.page h1{color:#182b46;letter-spacing:0}
   <div class="dynamic-results" id="dynamic-results" hidden>
     <div class="dynamic-stats" id="dynamicStats"></div>
     <div class="dynamic-notice" id="dynamicNotice"></div>
-    <div class="dynamic-columns">
-      <div class="dynamic-panel"><h3>数据质量检查</h3><div id="dynamicChecks"></div></div>
-      <div class="dynamic-panel"><h3>异常样本（含原始行号）</h3><div style="display:flex;justify-content:flex-end;margin:-32px 0 8px"><button id="exportIssues" type="button" class="btn">导出全部异常CSV</button></div><div class="issue-scroll"><table class="dynamic-table"><thead><tr><th>类型</th><th>来源</th><th>问题描述</th></tr></thead><tbody id="dynamicIssues"></tbody></table></div></div>
-    </div>
     <div class="dynamic-candidates">
       <div class="candidate-heading"><div><h3>动态待下架候选商品</h3><p id="dynamicCandidateMeta"></p></div><button class="btn btn-primary" id="exportCandidates" type="button">导出商品审核CSV</button></div>
       <div class="candidate-filters"><label>品类 <select id="candidateType"><option value="">全部品类</option></select></label><label>风险 <select id="candidateRisk"><option value="">全部</option><option value="priority">优先复核</option><option value="watch">持续观察</option><option value="low">低贡献观察</option><option value="sample">样本观察</option></select></label><label>搜索 <input id="candidateSearch" type="search" placeholder="商品名称 / 商品ID" /></label><span id="candidateCount"></span></div>
       <div class="table-wrap"><table class="dynamic-table candidate-table"><thead><tr><th>处理优先级</th><th>商品 / ID</th><th>品类</th><th>区间销量</th><th>近30天</th><th>金币贡献</th><th>荣誉券贡献</th><th>入选原因 / 数据限制</th><th>审核结果</th></tr></thead><tbody id="candidateRows"></tbody></table></div>
       <div class="dynamic-caution">⚠️ 数据中未出现的零销量SKU无法从订单导出中发现；缺少在售商品清单/上架日期时，系统只输出复核候选，不自动执行下架。</div>
     </div>
+    <div class="dynamic-columns">
+      <div class="dynamic-panel"><h3>数据质量检查</h3><div id="dynamicChecks"></div></div>
+      <div class="dynamic-panel"><h3>异常样本（含原始行号）</h3><div style="display:flex;justify-content:flex-end;margin:-32px 0 8px"><button id="exportIssues" type="button" class="btn">导出全部异常CSV</button></div><div class="issue-scroll"><table class="dynamic-table"><thead><tr><th>类型</th><th>来源</th><th>问题描述</th></tr></thead><tbody id="dynamicIssues"></tbody></table></div></div>
+    </div>
+
   </div>
 </section>
 
@@ -5450,7 +5451,7 @@ const normAliases={};Object.keys(aliases).forEach(k=>normAliases[k]=new Set(alia
 function detectHeader(matrix){
  for(let i=0;i<Math.min(matrix.length,30);i++){
   const row=matrix[i]||[];const m={};row.forEach((h,j)=>{const n=norm(h);Object.keys(normAliases).forEach(k=>{if(m[k]==null && normAliases[k].has(n))m[k]=j;});});
-  if(m.date!=null&&m.item!=null&&m.qty!=null&&(m.type!=null||m.id!=null))return {index:i,map:m};
+  if(m.date!=null&&m.item!=null&&m.qty!=null)return {index:i,map:m};
  }
  return null;
 }
@@ -5507,6 +5508,8 @@ async function parseFiles(files){
   for(const {sheet,matrix} of sheets){
    const head=detectHeader(matrix);if(!head){continue;}used++;
    const map=head.map; const fallback=guessCategory(file.name,sheet);let valid=0;
+   if(map.type==null&&!fallback)issues.push({kind:'品类缺失',file:file.name+' / '+sheet,row:head.index+1,msg:'没有商品类型字段，且无法从工作表/文件名识别品类；本表暂记为未知品类',block:true});
+   if(map.goldAmount==null||map.honorAmount==null||map.goldQty==null||map.honorQty==null)issues.push({kind:'支付渠道字段不完整',file:file.name+' / '+sheet,row:head.index+1,msg:'缺少金币/荣誉券销量或金额字段，相关支付构成及贡献不能可靠判断',block:true});
    for(let j=head.index+1;j<matrix.length;j++){
     const arr=matrix[j]||[];
     if(!arr.some(x=>String(x).trim()))continue;
