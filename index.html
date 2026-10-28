@@ -588,31 +588,46 @@ header.page h1{color:#182b46;letter-spacing:0}
 </head>
 <body>
 <div class="wrap">
-  <header class="page"><div class="v2-headline"><h1>商城商品动态上下架管理 · V2.0</h1><span class="v2-pill">固定公式 · 持续增长</span></div><div class="sub">上传季度订单，自动计算同品类双后25%、排除近期回升，并按季度配额输出具体下架商品。</div></header>
+  <header class="page"><div class="v2-headline"><h1>商城商品动态上下架管理 · V2.0</h1><span class="v2-pill">固定公式 · 持续增长</span></div><div class="sub">上传季度在售商品订单，填写本季上新ID，自动计算双后25%、排除近期回升并生成下架名单。</div></header>
   
 <div class="v2-topline">每月上新17个 · 每季度计划上新51个 · 季度下架上限28个 · 商品池持续增长</div><nav class="sop-nav"><a href="#v2-upload">数据上传</a><a href="#v2-summary-anchor">季度汇总</a><a href="#v2-candidates">下架名单</a><a href="#v2-observe">持续观察</a><a href="#v2-sop">计算规则</a><a href="#v2-history">历史记录</a></nav><main class="v2-main">
 <section class="v2-panel" id="v2-upload">
- <div class="v2-section-title"><h2>01 / 上传本季度数据</h2><span class="v2-pill">每季度一次，固定公式自动计算</span></div>
- <div class="v2-grid">
- <div class="v2-stack"><div class="v2-upload" id="v2OrderDrop" tabindex="0" role="button"><strong>⇧ 上传本季度订单数据</strong><span class="v2-muted">批量选择 Excel / CSV</span><small>系统自动识别商品ID、销售日期、品类和金币/荣誉券销量</small></div><input hidden id="v2OrderInput" type="file" multiple accept=".csv,.xls,.xlsx" /><div class="v2-file-list" id="v2OrderFiles"></div></div>
- <div class="v2-stack"><div class="v2-upload" id="v2CatalogDrop" tabindex="0" role="button"><strong>▣ 导入 / 更新在售商品基础清单</strong><span class="v2-muted">首次导入一次，此后仅补充或更新有变化的商品</span><small>至少需要商品ID、名称、品类、上架日期及在售状态</small></div><input hidden id="v2CatalogInput" type="file" multiple accept=".csv,.xls,.xlsx" /><div class="v2-alert" id="v2CatalogStatus">读取基础清单…</div><div class="v2-flex"><button id="v2DownloadCatalog" class="v2-button alt" type="button">下载清单模板 / 备份</button><button id="v2ClearCatalog" class="v2-button alt" type="button">清除当前平台清单</button></div></div>
+ <div class="v2-section-title"><h2>01 / 上传本季度数据</h2><span class="v2-pill">每季度一次，上传即分析</span></div>
+ <div class="v2-grid v21-upload-grid">
+  <div class="v2-stack">
+    <div class="v2-upload" id="v2OrderDrop" tabindex="0" role="button"><strong>⇧ 上传本季度商城订单</strong><span class="v2-muted">点击或拖入多个 Excel / CSV 文件</span><small>以订单中的商品作为当前在售分析范围，按商品ID合并不同购买期限</small></div>
+    <input hidden id="v2OrderInput" type="file" multiple accept=".csv,.xls,.xlsx" />
+    <div class="v2-file-list" id="v2OrderFiles"></div>
+  </div>
+  <div class="v2-new-products">
+    <div class="v21-new-head"><strong>填写本季度上新商品ID</strong><span class="v2-mini" id="v21NewStatus">选择季度后填写，每个品类可填写多个ID</span></div>
+    <div class="v21-new-grid">
+      <label>头像框<textarea class="v21-new-id" data-category="头像框" placeholder="例如 1417, 1416" rows="2"></textarea></label>
+      <label>派对背景<textarea class="v21-new-id" data-category="派对背景" placeholder="例如 1382, 1362" rows="2"></textarea></label>
+      <label>资料卡<textarea class="v21-new-id" data-category="资料卡" placeholder="输入ID，逗号或换行分隔" rows="2"></textarea></label>
+      <label>聊天气泡<textarea class="v21-new-id" data-category="聊天气泡" placeholder="输入ID，逗号或换行分隔" rows="2"></textarea></label>
+      <label>座驾<textarea class="v21-new-id" data-category="座驾" placeholder="输入本季度新座驾ID" rows="2"></textarea></label>
+    </div>
+    <p class="v2-mini">填写本季度上新ID即可保护新品；上季度已填写的ID也会自动延续保护。本机保存，切换季度可重新查看。</p>
+    <div class="v2-flex"><button class="v2-button alt" id="v21SaveNew" type="button">保存上新ID并更新分析</button><button class="v2-button alt" id="v21ExportNew" type="button">导出上新ID记录</button></div>
+  </div>
  </div>
  <div class="v2-flex" style="padding:15px 0 3px"><label class="v2-field">商城平台<select id="v2Platform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label><label class="v2-field">分析季度<select id="v2Quarter"><option value="">上传后自动识别</option></select></label><button id="v2Run" class="v2-button" type="button" disabled>重新按固定规则分析</button><span class="v2-muted">文件只在浏览器内计算，不上传到GitHub</span></div>
- <div id="v2Status" class="v2-alert">上传季度订单后自动生成分析结果。首次使用需导入一次商品基础清单，才能识别零销量SKU和新品。</div>
+ <div id="v2Status" class="v2-alert">上传季度订单、填写本季度各品类上新ID，系统将自动生成下架名单。没有成交记录的商品不在订单中，本工具无法识别。</div>
 </section>
 <section class="v2-panel"><h2>下架判断流程</h2><div class="v2-rules">
  <div class="v2-rule"><b>① 数据汇总</b><span>按平台、品类、商品ID汇总完整季度，不同购买期限合并。</span></div>
  <div class="v2-rule"><b>② 两项后25%</b><span>季度销量和成交活跃度分别排名，双重命中才进入低效池。</span></div>
  <div class="v2-rule"><b>③ 排除需求回升</b><span>近30天≥5件且较前60天月均增长≥20%，暂不下架。</span></div>
- <div class="v2-rule"><b>④ 数量上限</b><span>成交天数更少、季度销量更低者优先，按各品类季度上限截取。</span></div></div><p class="v2-foot">仅评估上架满180天、正常在售的常规商品；数据异常或缺少基础清单时不能形成正式下架清单。</p>
+ <div class="v2-rule"><b>④ 数量上限</b><span>成交天数更少、季度销量更低者优先，按各品类季度上限截取。</span></div></div><p class="v2-foot">默认订单中的商品为当前在售商品；本季度及上季度已登记的新品不参与下架。未登记的历史上新ID无法仅凭订单日期准确识别，缺失订单的零销量商品也无法计算。</p>
 </section>
 <section class="v2-panel" id="v2-summary-anchor">
  <div class="v2-section-title"><h2>02 / 各品类季度上下架汇总</h2><span class="v2-help">计划上新51 · 下架上限28 · 计划净新增≥23</span></div>
  <div id="v2Results" hidden><div id="v2Summary" class="v2-summary"></div><div id="v2Quality" class="v2-alert"></div></div>
- <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>品类</th><th>季度上新计划</th><th>季度下架上限</th><th>可参与评估SKU</th><th>两项后25%命中</th><th>本季度建议下架</th><th>计划净新增</th></tr></thead><tbody id="v2Overview">
- <tr><td>头像框</td><td>12</td><td>8</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>派对背景</td><td>12</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>资料卡</td><td>12</td><td>5</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>聊天气泡</td><td>12</td><td>4</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>座驾</td><td>3</td><td>1</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td><b>合计</b></td><td>51</td><td>28</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
+ <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>品类</th><th>季度上新计划</th><th>本季登记新品</th><th>季度下架上限</th><th>可参与评估SKU</th><th>两项后25%命中</th><th>本季度建议下架</th><th>计划净新增</th></tr></thead><tbody id="v2Overview">
+ <tr><td>头像框</td><td>12</td><td>—</td><td>8</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>派对背景</td><td>12</td><td>—</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>资料卡</td><td>12</td><td>—</td><td>5</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>聊天气泡</td><td>12</td><td>—</td><td>4</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>座驾</td><td>3</td><td>—</td><td>1</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td><b>合计</b></td><td>51</td><td>—</td><td>28</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
 </section>
-<section class="v2-panel" id="v2-candidates"><div class="v2-section-title"><div><h2>03 / 本季度建议下架商品名单</h2><p class="v2-muted" id="v2CandidateCaption">上传完整季度订单与在售商品清单后生成具体SKU。</p></div><div class="v2-flex"><button class="v2-button" id="v2Download" type="button" disabled>导出下架CSV</button><button class="v2-button alt" id="v2Save" type="button" disabled>保存本期结果</button></div></div>
+<section class="v2-panel" id="v2-candidates"><div class="v2-section-title"><div><h2>03 / 本季度建议下架商品名单</h2><p class="v2-muted" id="v2CandidateCaption">上传本季度订单并登记上新ID后，自动输出具体SKU下架建议。</p></div><div class="v2-flex"><button class="v2-button" id="v2Download" type="button" disabled>导出下架CSV</button><button class="v2-button alt" id="v2Save" type="button" disabled>保存本期结果</button></div></div>
  <div class="v2-filter"><label>品类<select id="v2FilterCat"><option value="">全部</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label><label>检索<input id="v2FilterText" type="search" placeholder="商品名称 / ID" /></label><span id="v2CandidateCount" class="v2-mini"></span></div>
  <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>建议</th><th>商品名称 / ID</th><th>品类</th><th>季度销量</th><th>成交天数 / 活跃度</th><th>销量排名</th><th>活跃度排名</th><th>最近30天</th><th>下架依据</th></tr></thead><tbody id="v2CandidateRows"><tr><td colspan="9" class="v2-empty">暂无季度订单数据</td></tr></tbody></table></div><p class="v2-foot">根据名单在商城后台手动下架。下架只停止新售卖，不影响已购权益；候选不足配额时不强制补满。</p>
 </section>
@@ -620,8 +635,8 @@ header.page h1{color:#182b46;letter-spacing:0}
 <details class="v2-panel" id="v2-issues"><summary style="font-weight:650;color:#345678;cursor:pointer">查看数据质量问题（重复、冲突、来源行号）</summary><div style="padding-top:13px"><div class="v2-section-title"><h3>异常记录定位</h3><div class="v2-flex"><span class="v2-mini" id="v2ErrorInfo"></span><button class="v2-button alt" id="v2DownloadIssues" type="button">导出异常CSV</button></div></div><div class="v2-table-wrap v2-errorlist"><table class="v2-table"><thead><tr><th>级别</th><th>问题</th><th>文件 / 行号</th><th>描述</th></tr></thead><tbody id="v2ErrorRows"></tbody></table></div><p class="v2-muted">没有成交记录的日期，不等于已经证明漏导；需结合后台导出范围判断。</p></div></details>
 <section class="v2-panel" id="v2-sop"><h2>05 / 固定计算规则及数量配额</h2><div class="v2-grid">
  <div class="v2-table-wrap"><table class="v2-table" style="min-width:450px"><thead><tr><th>品类</th><th>每月上新</th><th>季度上新</th><th>季度下架上限</th></tr></thead><tbody><tr><td>头像框</td><td>4</td><td>12</td><td>8</td></tr><tr><td>派对背景</td><td>4</td><td>12</td><td>10</td></tr><tr><td>资料卡</td><td>4</td><td>12</td><td>5</td></tr><tr><td>聊天气泡</td><td>4</td><td>12</td><td>4</td></tr><tr><td>座驾</td><td>1</td><td>3</td><td>1</td></tr><tr><td><b>合计</b></td><td>17</td><td>51</td><td>28</td></tr></tbody></table></div>
- <div class="v2-stack"><p class="v2-muted"><b>成交活跃度</b> = 有成交天数 ÷ 有效可售天数。</p><p class="v2-muted"><b>低效条件</b> = 季度销量后25% + 成交活跃度后25%同时命中。</p><p class="v2-muted"><b>需求回升</b> = 最近30天至少5件，且较前60天月均增长≥20%。</p><p class="v2-muted"><b>排序</b> = 成交天数越少越优先，其次季度销量越低越优先。</p><p class="v2-muted"><b>季度净新增</b> = 上新数量 − 下架数量；下架限额不是必须完成的任务。</p><p class="v2-muted">活动/定制/权益商品、靓号以及上架不满180天的新品不参与常规下架。</p></div></div></section>
-<section class="v2-panel" id="v2-history"><h2>06 / 历史季度记录</h2><p class="v2-muted">本期结果保存至当前浏览器，下次上传新数据自动复用相同公式；跨设备不会自动同步。</p><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>季度</th><th>平台</th><th>评估SKU</th><th>下架SKU</th><th>保存时间</th></tr></thead><tbody id="v2History"></tbody></table></div></section></main><details class="v2-archive"><summary>历史2026年4—6月数据与旧版复核台（不参与新季度计算）</summary><div><section class="sop-block" id="review"><h2 class="sop-title">04 / 历史商品人工复核台</h2>
+ <div class="v2-stack"><p class="v2-muted"><b>成交活跃度</b> = 有成交天数 ÷ 有效可售天数。</p><p class="v2-muted"><b>新品保护</b> = 本季度及上季度登记的上新商品ID不参与常规下架排名（未登记的上新无法凭订单识别）。</p><p class="v2-muted"><b>低效条件</b> = 季度销量后25% + 成交活跃度后25%同时命中。</p><p class="v2-muted"><b>需求回升</b> = 最近30天至少5件，且较前60天月均增长≥20%。</p><p class="v2-muted"><b>排序</b> = 成交天数越少越优先，其次季度销量越低越优先。</p><p class="v2-muted"><b>季度净新增</b> = 上新数量 − 下架数量；下架限额不是必须完成的任务。</p><p class="v2-muted">靓号不参与本规则；其他特殊商品若混在常规订单中，需在本季度上新ID列表中之外另行剔除，订单本身无法识别特殊权益。</p></div></div></section>
+<section class="v2-panel" id="v2-history"><h2>06 / 历史季度记录</h2><p class="v2-muted">本期分析和每季度填写的上新ID保存在当前浏览器。换设备或清除浏览器数据会丢失，请定期导出上新ID记录。</p><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>季度</th><th>平台</th><th>评估SKU</th><th>下架SKU</th><th>保存时间</th></tr></thead><tbody id="v2History"></tbody></table></div></section></main><details class="v2-archive"><summary>历史2026年4—6月数据与旧版复核台（不参与新季度计算）</summary><div><section class="sop-block" id="review"><h2 class="sop-title">04 / 历史商品人工复核台</h2>
   <p class="sop-sub">保留原来的商品明细与复核勾选，新增“历史风险提示、审核结论、备注”。审核结论由人工选择；本地记录不会自动同步 GitHub，也不会触发任何商品下架。<strong>“已执行下架”只是线下执行的登记，不代表本系统已调用商城后台。</strong></p>
   <div class="filter-controls"><label>品类 <select id="filterType"><option value="">全部品类</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>座驾</option><option>聊天气泡</option></select></label>
     <label>历史风险 <select id="filterRisk"><option value="">全部</option><option value="p0">历史4—6月≤1件</option><option value="p1">历史4—6月2—5件</option><option value="p2">双渠道低贡献</option><option value="mixed">仅金币低</option></select></label>
