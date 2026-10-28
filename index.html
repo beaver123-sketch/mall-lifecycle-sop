@@ -616,6 +616,7 @@ header.page h1{color:#182b46;letter-spacing:0}
   <input type="file" id="v23FileInput" multiple hidden accept=".xlsx,.xls,.csv" />
  </div>
  <div id="v2OrderFiles" class="v2-file-list"></div>
+ <div class="v23-file-diagnostics"><div class="v2-section-title"><strong>所选月份文件解析情况</strong><div class="v2-flex"><span id="v23ParseTotals" class="v2-mini"></span><button id="v23Reparse" type="button" class="v2-button alt">重新解析已存文件</button></div></div><div id="v23ParseDetails" class="v23-parse-details"><span class="v2-muted">暂无已上传文件</span></div></div>
  <div class="v2-flex v23-backup"><button class="v2-button alt" id="v23BackupYear" type="button">备份本年度数据（JSON）</button><button class="v2-button alt" id="v23RestoreYear" type="button">恢复备份</button><input type="file" id="v23RestoreInput" hidden accept=".json,application/json" /><span class="v2-muted">仅保存在当前浏览器，清除浏览器数据或更换设备前请备份。</span></div>
  <details class="v23-new-products" id="v23NewDetails"><summary class="v23-accordion-summary"><strong>本季度上新商品ID</strong><span id="v23NewStatus">尚未登记</span></summary><div class="v23-new-body">
   <p class="v2-muted">输入各品类新商品ID，切换季度时自动读取已保存记录；当前季度及上一季度的新品会从候选中排除。</p>
@@ -638,19 +639,11 @@ header.page h1{color:#182b46;letter-spacing:0}
 </section>
 <section class="v2-panel" id="v2-candidates"><div class="v2-section-title"><div><h2>03 / 本季度建议下架商品名单</h2><p class="v2-muted" id="v2CandidateCaption">上传本季度订单并登记上新ID后，自动输出具体SKU下架建议。</p></div><div class="v2-flex"><button class="v2-button" id="v2Download" type="button" disabled>导出下架CSV</button><button class="v2-button alt" id="v2Save" type="button" disabled>保存本期结果</button></div></div>
  <div class="v2-filter"><label>品类<select id="v2FilterCat"><option value="">全部</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label><label>检索<input id="v2FilterText" type="search" placeholder="商品名称 / ID" /></label><span id="v2CandidateCount" class="v2-mini"></span></div>
- <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>建议</th><th>商品名称 / ID</th><th>品类</th><th>季度销量</th><th>成交天数 / 活跃度</th><th>销量排名</th><th>活跃度排名</th><th>最近30天</th><th>下架依据</th><th>操作</th></tr></thead><tbody id="v2CandidateRows"><tr><td colspan="10" class="v2-empty">暂无季度订单数据</td></tr></tbody></table></div><p class="v2-foot">根据名单在商城后台手动下架。下架只停止新售卖，不影响已购权益；候选不足配额时不强制补满。</p>
+ <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>建议</th><th>商品名称 / ID</th><th>品类</th><th>季度销量</th><th>成交天数 / 活跃度</th><th>销量排名</th><th>活跃度排名</th><th>最近30天</th><th>下架依据</th><th>已下架</th></tr></thead><tbody id="v2CandidateRows"><tr><td colspan="10" class="v2-empty">暂无季度订单数据</td></tr></tbody></table></div><p class="v2-foot">根据名单在商城后台手动下架。下架只停止新售卖，不影响已购权益；候选不足配额时不强制补满。</p>
 </section>
 <section class="v2-panel" id="v23-delisted">
- <div class="v2-section-title"><div><h2>04 / 已下架商品记录</h2><p class="v2-muted">商城后台手动下架后在这里登记；历史记录会保存，并排除后续季度重复推荐。</p></div><div class="v2-flex"><span id="v23DelistedCount" class="v2-pill">已记录 0 个</span><button type="button" class="v2-button alt" id="v23ExportDelisted">导出记录CSV</button></div></div>
- <form id="v23DelistForm" class="v23-delist-form">
-  <label class="v2-field">商品品类<select id="v23DelistType" required><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label>
-  <label class="v2-field">商品ID<input id="v23DelistId" type="text" inputmode="numeric" placeholder="输入商品ID" required /></label>
-  <label class="v2-field">商品名称<input id="v23DelistName" type="text" placeholder="商品名称（可选）" /></label>
-  <label class="v2-field">实际下架日期<input id="v23DelistDate" type="date" required /></label>
-  <label class="v2-field v23-delist-notes">备注<input id="v23DelistNote" type="text" maxlength="200" placeholder="下架原因或其他备注（可选）" /></label>
-  <button id="v23SaveDelist" type="submit" class="v2-button">保存下架记录</button>
-  <button id="v23CancelDelist" type="button" class="v2-button alt" hidden>取消编辑</button>
- </form>
+ <div class="v2-section-title"><div><h2>04 / 已下架商品记录</h2><p class="v2-muted">在建议下架名单中勾选即可自动记录，不用重复填写商品信息。</p></div><div class="v2-flex"><span id="v23DelistedCount" class="v2-pill">已记录 0 个</span><button type="button" class="v2-button alt" id="v23ExportDelisted">导出记录CSV</button></div></div>
+ <div class="v23-guidance">在上方「建议下架商品名单」中勾选 <b>已下架</b>，商品ID、名称、品类和登记日期将自动保存到这里。已记录商品不会再次出现在下架候选中；操作错误可在本表撤销。</div>
  <div class="v2-filter"><label>品类 <select id="v23DelistFilter"><option value="">全部品类</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label><label>搜索 <input id="v23DelistSearch" type="search" placeholder="商品ID / 名称 / 备注" /></label></div>
  <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>商品ID</th><th>商品名称</th><th>品类</th><th>下架日期</th><th>备注</th><th>操作</th></tr></thead><tbody id="v23DelistedRows"><tr><td colspan="6" class="v2-empty">暂无已下架记录</td></tr></tbody></table></div>
 </section>
