@@ -289,12 +289,26 @@ const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],w
 drawResults();if(formal)storeHistory(true);}
 function drawResults(){if(!results)return;const x=results;$('v2Results').hidden=false;
 $('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['季度额度剩余',Math.max(0,28-TYPES.reduce((a,t)=>a+x.stats[t].executed,0))]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
-$('v2Quality').className='v2-alert '+(x.formal?'good':'danger');$('v2Quality').innerHTML='<b>'+(x.formal?'已完成本季度分析':'数据暂不满足正式下架条件')+'</b><div>'+esc([...x.blocks,...x.warnings].join('；')||'数据结构未发现关键异常，仍建议确认后台导出覆盖完整。')+'</div><small>'+x.sourceCount+'份文件 · '+(x.dayCount?x.dayCount+'/'+x.r.days+'个日期有成交记录':'尚未成功解析订单日期')+'</small>';
+$('v2Quality').className='v2-alert '+(x.formal?'good':'danger');
+const shortBlocks=x.blocks.slice(0,3),shortWarnings=x.warnings.slice(0,2);
+const headline=x.formal?'季度数据检查通过，已生成下架建议':'本季度暂不能生成正式下架名单';
+const collision=x.conflictGroups?'<span class="v23-chip-alert">统计口径待确认：'+x.conflictGroups+'组 / '+x.conflictRows+'行</span>':'';
+const duplicates=x.exactDuplicates?'<span class="v23-chip-muted">完全重复已去重：'+x.exactDuplicates+'行</span>':'';
+const diagnostics=x.errors.length?'<button type="button" class="v23-open-issues" id="v23OpenIssues">查看问题明细（'+x.errors.length+'类/组记录）</button>':'';
+const summary=esc(shortBlocks.join('；')||'检查通过')+(shortWarnings.length?' · 其他提示：'+esc(shortWarnings.join('；')):'');
+$('v2Quality').innerHTML='<div class="v23-status-head"><b>'+headline+'</b><div class="v23-status-pills">'+collision+duplicates+'</div></div>'+
+ '<div class="v23-quality-summary">'+summary+'</div>'+
+ '<div class="v23-quality-footer"><small>'+x.sourceCount+'份文件 · '+(x.dayCount?x.dayCount+'/'+x.r.days+'天有成交记录':'暂无可用订单日期')+'</small>'+diagnostics+'</div>';
+const openIssues=$('v23OpenIssues');if(openIssues)openIssues.addEventListener('click',()=>{
+ const main=$('v23-notes'),detail=$('v2-issues');
+ if(main)main.open=true;if(detail)detail.open=true;
+ if(detail&&detail.scrollIntoView)detail.scrollIntoView({behavior:'smooth',block:'start'});
+});
 $('v2Overview').innerHTML=TYPES.map(t=>{const v=x.stats[t];return '<tr><td><b>'+t+'</b></td><td>'+v.plan+'</td><td>'+v.registered+'</td><td>'+v.quota+(v.executed?'（已执行'+v.executed+'）':'')+'</td><td>'+v.eligible+'</td><td>'+v.lowBoth+'</td><td><b>'+(x.formal?v.suggested:'待核验')+'</b></td><td>'+(x.formal?v.plan-v.suggested:'—')+'</td></tr>';}).join('')+'<tr><td><b>合计</b></td><td>51</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].registered,0)+'</td><td>28</td><td>'+x.eligible+'</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].lowBoth,0)+'</td><td><b>'+(x.formal?x.suggested.length:'待核验')+'</b></td><td>'+(x.formal?51-x.suggested.length:'—')+'</td></tr>';
 $('v2CandidateCaption').textContent=x.formal?'已按规则生成商品ID，可在商城后台执行下架':'缺少季度月份数据或有关键问题，暂不允许导出正式下架名单';
 drawCandidates();
 $('v2ObserveRows').innerHTML=x.watch.slice(0,100).map(v=>'<tr><td><span class="v2-label b">观察</span></td><td><b>'+esc(v.name)+'</b><br><small>'+esc(v.id)+'</small></td><td>'+esc(v.type)+'</td><td>'+format(v.qty)+'</td><td>'+v.activeDays+'天</td><td>'+format(v.last)+'</td><td>'+esc(v.reason)+'</td></tr>').join('')||'<tr><td colspan="7">暂无观察商品</td></tr>';$('v2ObserveInfo').textContent='共'+x.watch.length+'条（展示前100条）';
-$('v2ErrorRows').innerHTML=x.errors.slice(0,100).map(e=>'<tr><td>'+(e.fatal?'错误':'提示')+'</td><td>'+esc(e.kind)+'</td><td>'+esc(e.source)+' 第'+esc(e.line)+'行</td><td>'+esc(e.reason)+'</td></tr>').join('')||'<tr><td colspan="4">没有字段级异常</td></tr>';$('v2ErrorInfo').textContent=x.errors.length+'条';
+$('v2ErrorRows').innerHTML=x.errors.slice(0,40).map(e=>'<tr><td>'+(e.fatal?'错误':'提示')+'</td><td>'+esc(e.kind)+'</td><td>'+esc(e.source)+' 第'+esc(e.line)+'行</td><td>'+esc(e.reason)+'</td></tr>').join('')||'<tr><td colspan="4">没有字段级异常</td></tr>';$('v2ErrorInfo').textContent=x.errors.length+'项（摘要，展示前40项）';
 $('v2Download').disabled=!x.formal||!x.suggested.length;$('v2Save').disabled=!x.formal;drawHistory();}
 function drawCandidates(){if(!results)return;const t=$('v2FilterCat').value,search=$('v2FilterText').value.toLowerCase().trim();
 const a=results.suggested.filter(x=>(!t||x.type===t)&&(!search||x.id.includes(search)||x.name.toLowerCase().includes(search)));$('v2CandidateCount').textContent=a.length+'条';
