@@ -661,7 +661,7 @@ header.page h1{color:#182b46;letter-spacing:0}
     <div class="dynamic-notice" id="dynamicNotice"></div>
     <div class="dynamic-columns">
       <div class="dynamic-panel"><h3>数据质量检查</h3><div id="dynamicChecks"></div></div>
-      <div class="dynamic-panel"><h3>异常样本（含原始行号）</h3><div class="issue-scroll"><table class="dynamic-table"><thead><tr><th>类型</th><th>来源</th><th>问题描述</th></tr></thead><tbody id="dynamicIssues"></tbody></table></div></div>
+      <div class="dynamic-panel"><h3>异常样本（含原始行号）</h3><div style="display:flex;justify-content:flex-end;margin:-32px 0 8px"><button id="exportIssues" type="button" class="btn">导出全部异常CSV</button></div><div class="issue-scroll"><table class="dynamic-table"><thead><tr><th>类型</th><th>来源</th><th>问题描述</th></tr></thead><tbody id="dynamicIssues"></tbody></table></div></div>
     </div>
     <div class="dynamic-candidates">
       <div class="candidate-heading"><div><h3>动态待下架候选商品</h3><p id="dynamicCandidateMeta"></p></div><button class="btn btn-primary" id="exportCandidates" type="button">导出商品审核CSV</button></div>
@@ -5295,6 +5295,7 @@ header.page h1{color:#182b46;letter-spacing:0}
     生成时间 2026-07-14 17:56:16 · 原始报告生成于2026-07-14；本版保留其历史数值，未重新取得原始 CSV 验证
   </footer>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script>
 
 (function() {
@@ -5423,5 +5424,277 @@ header.page h1{color:#182b46;letter-spacing:0}
 })();
 
 </script>
+
+<script>
+/* BEGIN DYNAMIC DATA ENGINE */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const aliases={
+ date:['日期','统计日期','交易日期','下单日期','购买日期','时间','date','day'],
+ type:['商品类型','商品类别','品类','类型','道具类型','category','type'],
+ item:['商品名称','商品','道具','道具名称','商品名','productname','itemname'],
+ id:['商品id','商品编号','道具id','道具编号','sku','skuid','itemid','productid'],
+ duration:['购买天数','有效天数','购买期限','时长','天数','duration'],
+ qty:['总销量','销量','购买数量','销售数量','商品销量','总销售量','总件数','totalqty','quantity'],
+ goldQty:['金币销量','金币购买数量','金币支付数量','金币购买件数','金币售出量','金币支付件数'],
+ honorQty:['荣誉券销量','荣誉券购买数量','荣誉券支付数量','荣誉券购买件数','荣誉券支付件数'],
+ goldAmount:['金币金额','总销售金币','销售金币','金币收入','金币消耗','金币销售额'],
+ honorAmount:['荣誉券金额','总销售荣誉券','销售荣誉券','荣誉券收入','荣誉券消耗','荣誉券销售额'],
+ totalAmount:['总金额','总销售金额','销售总金额'],
+ buyerCount:['购买人数','购买用户数','购买用户','买家人数'],
+ platform:['平台','平台名称','app']
+};
+function norm(s){return String(s??'').normalize('NFKC').toLowerCase().replace(/[\s_（）()[\]【】:\-—·]+/g,'');}
+const normAliases={};Object.keys(aliases).forEach(k=>normAliases[k]=new Set(aliases[k].map(norm)));
+function detectHeader(matrix){
+ for(let i=0;i<Math.min(matrix.length,30);i++){
+  const row=matrix[i]||[];const m={};row.forEach((h,j)=>{const n=norm(h);Object.keys(normAliases).forEach(k=>{if(m[k]==null && normAliases[k].has(n))m[k]=j;});});
+  if(m.date!=null&&m.item!=null&&m.qty!=null&&(m.type!=null||m.id!=null))return {index:i,map:m};
+ }
+ return null;
+}
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nfmt=v=>v==null?'—':Number(v).toLocaleString('zh-CN',{maximumFractionDigits:2});
+const number=v=>{if(v==null||String(v).trim()==='')return null;const clean=String(v).replace(/[,，\s]/g,'').trim(); if(!/^-?\d+(?:\.\d+)?$/.test(clean))return NaN;return +clean;};
+function dateValue(raw){
+ let v=String(raw??'').trim();
+ if(!v)return '';
+ if(/^\d{5}(?:\.\d+)?$/.test(v)){let d=new Date(Date.UTC(1899,11,30)+Number(v)*86400000);return d.toISOString().slice(0,10);}
+ let m=v.match(/^(\d{4})[\-\/.年](\d{1,2})[\-\/.月](\d{1,2})/);
+ if(!m)return '';
+ const y=+m[1],mo=+m[2],da=+m[3];const d=new Date(Date.UTC(y,mo-1,da));
+ if(d.getUTCFullYear()!==y||d.getUTCMonth()+1!==mo||d.getUTCDate()!==da)return '';
+ return [y,String(mo).padStart(2,'0'),String(da).padStart(2,'0')].join('-');
+}
+function plusDays(iso,n){const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function daysBetween(a,b){return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000)+1;}
+function category(raw){const v=String(raw||'').trim();if(/派对(背景|主题)/.test(v))return '派对背景';if(/头像框|相框/.test(v))return '头像框';if(/资料卡/.test(v))return '资料卡';if(/座驾/.test(v))return '座驾';if(/聊天气泡|气泡/.test(v))return '聊天气泡';if(/靓号/.test(v))return '靓号';if(/套餐/.test(v))return '推荐套餐';return v||'未知品类';}
+function guessCategory(file,sheet){for(const x of [sheet,file]){const c=category(x);if(['头像框','派对背景','资料卡','座驾','聊天气泡','靓号','推荐套餐'].includes(c))return c;}return '';}
+function csvMatrix(src){
+ const out=[];let row=[],cell='',q=false;
+ src=src.replace(/^\uFEFF/,'');
+ for(let i=0;i<src.length;i++){
+  const c=src[i];
+  if(q){if(c==='"'&&src[i+1]==='"'){cell+='"';i++;}else if(c==='"')q=false;else cell+=c;}
+  else if(c==='"')q=true;
+  else if(c===','){row.push(cell);cell='';}
+  else if(c==='\n'||c==='\r'){if(c==='\r'&&src[i+1]==='\n')i++;row.push(cell);if(row.some(v=>String(v).trim()!==''))out.push(row);row=[];cell='';}
+  else cell+=c;
+ }
+ row.push(cell);if(row.some(v=>String(v).trim()!==''))out.push(row);
+ return out;
+}
+async function readMatrix(file){
+ const buf=await file.arrayBuffer();
+ if(/\.csv$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes('\uFFFD'))txt=new TextDecoder('gb18030').decode(buf);return [{sheet:'CSV',matrix:csvMatrix(txt)}];}
+ if(!window.XLSX)throw new Error('Excel解析组件暂不可用，请刷新网页重试，或将文件另存为UTF-8 CSV上传。');
+ const wb=XLSX.read(buf,{type:'array',cellDates:false});
+ return wb.SheetNames.map(sheet=>({sheet,matrix:XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:'',raw:false,blankrows:false})}));
+}
+let batchRows=[],fileRecords=[],analysis=null,issuesAll=[],chosenFiles=[],candidateSource=[];
+let state={};try{state=JSON.parse(localStorage.getItem('mall-dynamic-review-v1')||'{}');if(!state||typeof state!=='object')state={};}catch(e){}
+const setMessage=(msg,kind='')=>{const el=$('uploadMessage');el.textContent=msg;el.className='upload-message'+(kind?' is-'+kind:'');};
+function displayFiles(){ $('uploadedFiles').innerHTML=chosenFiles.map(f=>'<span class="uploaded-file">'+esc(f.name)+' · '+(f.size/1024).toFixed(1)+'KB</span>').join('');}
+function getValue(arr,map,k){return map[k]==null?'':(arr[map[k]]??'');}
+function validateNum(v){return v==null||(Number.isFinite(v)&&v>=0&&Math.floor(v)===v);}
+async function parseFiles(files){
+ const rows=[],records=[],issues=[];let invalid=0;
+ for(const file of files){
+  let sheets;
+  try{sheets=await readMatrix(file);}catch(e){issues.push({kind:'读取失败',file:file.name,row:'—',msg:e.message,block:true});invalid++;continue;}
+  let used=0;
+  for(const {sheet,matrix} of sheets){
+   const head=detectHeader(matrix);if(!head){continue;}used++;
+   const map=head.map; const fallback=guessCategory(file.name,sheet);let valid=0;
+   for(let j=head.index+1;j<matrix.length;j++){
+    const arr=matrix[j]||[];
+    if(!arr.some(x=>String(x).trim()))continue;
+    const date=dateValue(getValue(arr,map,'date'));
+    const product=String(getValue(arr,map,'item')).trim();
+    const cat=category(getValue(arr,map,'type')||fallback);
+    const rawid=String(getValue(arr,map,'id')||'').trim();
+    const idMatch=product.match(/[（(]\s*(\d+)\s*[）)]\s*$/);
+    const id=rawid||idMatch?.[1]||'';
+    const name=(idMatch?product.slice(0,idMatch.index):product).trim();
+    const obj={date,cat,name,id,product,duration:String(getValue(arr,map,'duration')).trim(),
+     qty:number(getValue(arr,map,'qty')),gq:number(getValue(arr,map,'goldQty')),hq:number(getValue(arr,map,'honorQty')),
+     ga:number(getValue(arr,map,'goldAmount')),ha:number(getValue(arr,map,'honorAmount')),
+     totalAmount:number(getValue(arr,map,'totalAmount')),buyerCount:number(getValue(arr,map,'buyerCount')),
+     origin:file.name+' / '+sheet,row:j+1,platform:String(getValue(arr,map,'platform')).trim()};
+    if(!date||!name||!validateNum(obj.qty)||[obj.gq,obj.hq,obj.ga,obj.ha,obj.totalAmount,obj.buyerCount].some(x=>x!=null&&!Number.isFinite(x)||x!=null&&x<0)){
+     invalid++;issues.push({kind:'字段异常',file:obj.origin,row:obj.row,msg:'日期、商品名或销量/金额字段为空或非法',block:true});continue;
+    }
+    if(!id)issues.push({kind:'缺少商品ID',file:obj.origin,row:obj.row,msg:'商品「'+name+'」无可识别ID，按品类+商品名称暂时汇总',block:true});
+    if(obj.gq!=null&&obj.hq!=null&&obj.gq+obj.hq!==obj.qty)issues.push({kind:'销量拆分不符',file:obj.origin,row:obj.row,msg:'总销量 '+obj.qty+' ≠ 金币销量 '+obj.gq+' + 荣誉券销量 '+obj.hq,block:true});
+    if(obj.gq!=null&&!validateNum(obj.gq)||obj.hq!=null&&!validateNum(obj.hq))issues.push({kind:'销量格式错误',file:obj.origin,row:obj.row,msg:'支付渠道销量不是非负整数',block:true});
+    if(obj.platform&&/vone/i.test(obj.platform)&&$('batchPlatform').value==='POPPO'||obj.platform&&/poppo/i.test(obj.platform)&&$('batchPlatform').value==='VONE')issues.push({kind:'平台不匹配',file:obj.origin,row:obj.row,msg:'源表平台为'+obj.platform+'，当前批次选择'+$('batchPlatform').value,block:true});
+    rows.push(obj);valid++;
+   }
+   records.push({file:file.name,sheet,rows:valid});
+  }
+  if(!used)issues.push({kind:'未识别表格',file:file.name,row:'—',msg:'未找到“日期、商品名称、总销量、商品类型/ID”等必需表头，文件未计入',block:true});
+ }
+ return {rows,records,issues,invalid};
+}
+function cmp(a,b){return a.date.localeCompare(b.date)||a.cat.localeCompare(b.cat)||(a.id||a.name).localeCompare(b.id||b.name);}
+const sum=(rows,k)=>rows.reduce((a,r)=>a+(r[k]||0),0);
+const percent=(a,b)=>a==null||b==null||b<=0?null:a/b*100;
+const pct=v=>v==null?'—':v.toFixed(2)+'%';
+function renderStats(stats){$('dynamicStats').innerHTML=stats.map(([n,v])=>'<div class="dynamic-stat"><span>'+esc(n)+'</span><b>'+esc(v)+'</b></div>').join('');}
+function renderIssues(issues){
+ issuesAll=issues;
+ $('dynamicIssues').innerHTML=issues.length?issues.slice(0,50).map(x=>'<tr><td>'+esc(x.kind)+'</td><td>'+esc(x.file)+'<br><small>第'+esc(x.row)+'行</small></td><td class="reason">'+esc(x.msg)+'</td></tr>').join(''):'<tr><td colspan="3">没有发现结构性异常；仍需与后台核对日期覆盖、漏页及在售商品清单。</td></tr>';
+ if(issues.length>50)$('dynamicIssues').insertAdjacentHTML('beforeend','<tr><td colspan="3">仅展示前50条，其余可通过“导出全部异常CSV”查看。</td></tr>');
+}
+function calc(){
+ if(!batchRows.length)return;
+ const start=$('batchStart').value,end=$('batchEnd').value;
+ if(!start||!end||start>end){setMessage('分析起止日期不合法，请重新选择。','error');return;}
+ const today=new Date();const localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+ const excludes=$('excludeToday').checked&&end>=localToday;
+ const cutEnd=excludes?plusDays(localToday,-1):end;
+ const rows=batchRows.filter(r=>r.date>=start&&r.date<=cutEnd);
+ if(!rows.length){setMessage('所选日期范围没有有效销量记录。请调整日期区间或取消“排除当天”选项。','error');$('dynamic-results').hidden=true;return;}
+ const rangeDays=daysBetween(start,cutEnd),periodComplete=rangeDays>=90;
+ const issues=[...fileRecords.issues],seen=new Map(),clean=[],duplicates=[],conflicts=[];
+ for(const r of rows.sort(cmp)){
+  const key=[$('batchPlatform').value,r.date,r.cat,r.id||'NAME:'+r.name,r.duration].join('|');
+  if(!seen.has(key)){seen.set(key,r);clean.push(r);continue;}
+  const old=seen.get(key);
+  const metrics=['qty','gq','hq','ga','ha','totalAmount','buyerCount'];
+  const same=metrics.every(k=>old[k]===r[k]);
+  (same?duplicates:conflicts).push({kind:same?'疑似重复记录':'同维度统计冲突',file:r.origin,row:r.row,msg:'与 '+old.origin+' 第'+old.row+'行具有相同日期/品类/SKU/购买天数'+(same?'且全部金额/销量相同；已临时排除重复行':'但销量或金额不同；临时仅保留首条，必须核对'),block:true});
+ }
+ issues.push(...duplicates,...conflicts);
+ const allDates=new Set(clean.map(x=>x.date));let missingDays=0;for(let d=start;d<=cutEnd;d=plusDays(d,1)){if(!allDates.has(d))missingDays++;if(missingDays>9999)break;}
+ if(missingDays)issues.push({kind:'无订单记录日期',file:'全平台',row:'—',msg:missingDays+'个自然日没有任何记录（不等于确定漏导；需与后台核对）',block:true});
+ if(excludes)issues.push({kind:'排除当日数据',file:'日期范围',row:'—',msg:'已排除当日 '+localToday+' 的未完结数据；分析截止 '+cutEnd,block:false});
+ if(!periodComplete)issues.push({kind:'统计周期不足',file:'日期范围',row:'—',msg:'当前有效 '+rangeDays+' 天（不足90天），不能据此认定为连续90天低效',block:true});
+ const allCats=[...new Set(clean.map(r=>r.cat))];
+ for(const c of allCats){
+  const dates=new Set(clean.filter(r=>r.cat===c).map(r=>r.date));
+  const n=rangeDays-dates.size;
+  if(n>0)issues.push({kind:'品类无记录日期',file:c,row:'—',msg:'在'+rangeDays+'天内有'+n+'天无该品类记录；可能零销量，也可能漏导，不能自动认定',block:false});
+ }
+ const grouped=new Map();
+ for(const r of clean){
+  const key=[$('batchPlatform').value,r.cat,r.id||'NAME:'+r.name].join('|');
+  if(!grouped.has(key))grouped.set(key,{key,cat:r.cat,name:r.name,id:r.id,rows:[],qty:0,gq:0,hq:0,ga:0,ha:0,amountComplete:true,cntComplete:true});
+  const x=grouped.get(key);
+  if(r.name)x.name=r.name;
+  x.rows.push(r);x.qty+=r.qty;
+  if(r.ga==null||r.ha==null)x.amountComplete=false;
+  if(r.gq==null||r.hq==null)x.cntComplete=false;
+  x.gq+=r.gq||0;x.hq+=r.hq||0;x.ga+=r.ga||0;x.ha+=r.ha||0;
+ }
+ const cats={};
+ for(const x of grouped.values()){
+  if(!cats[x.cat])cats[x.cat]={ga:0,ha:0,complete:true,sku:0};
+  cats[x.cat].ga+=x.ga;cats[x.cat].ha+=x.ha;cats[x.cat].sku++;
+  if(!x.amountComplete)cats[x.cat].complete=false;
+ }
+ const oldThreshold={'头像框':.2,'派对背景':.2,'资料卡':.5,'座驾':.5,'聊天气泡':.3};
+ const candidates=[];
+ for(const x of grouped.values()){
+  if(['靓号','推荐套餐'].includes(x.cat))continue;
+  const end30=plusDays(cutEnd,-29);
+  const prev30Start=plusDays(cutEnd,-59);
+  const prev60Start=plusDays(cutEnd,-89);
+  const q30=sum(x.rows.filter(y=>y.date>=end30),'qty');
+  const p30=sum(x.rows.filter(y=>y.date>=prev30Start&&y.date<end30),'qty');
+  const p60=sum(x.rows.filter(y=>y.date>=prev60Start&&y.date<prev30Start),'qty');
+  const ga=cats[x.cat].complete&&x.amountComplete?percent(x.ga,cats[x.cat].ga):null;
+  const ha=cats[x.cat].complete&&x.amountComplete?percent(x.ha,cats[x.cat].ha):null;
+  const t=oldThreshold[x.cat];
+  const bothLow= t!=null&&ga!=null&&ha!=null&&ga<t&&ha<t;
+  const trend=periodComplete&&p60>0&&p30<=p60*.8&&q30<=p30*.8&&q30<=5;
+  let risk='',label='',reason='';
+  if(periodComplete&&x.qty<=1){risk='priority';label='优先复核';reason='近90天仅 '+x.qty+' 件；需核实已在售≥90天、是否限时/活动品';}
+  else if(periodComplete&&(x.qty<=5||trend)){risk='watch';label='持续观察';reason=x.qty<=5?'近90天共 '+x.qty+' 件':'连续两个30天窗口下降≥20%，且近30天≤5件';}
+  else if(bothLow&&q30<=5&&periodComplete){risk='low';label='低贡献观察';reason='金币与荣誉券贡献均低于历史品类参考阈值，近30天≤5件';}
+  else if(!periodComplete&&(x.qty<=5||bothLow&&q30<=5)){risk='sample';label='样本观察';reason='当前仅'+rangeDays+'天，销量'+x.qty+'件；需补足滚动90天才能核查正式下架';}
+  if(risk)candidates.push({...x,risk,label,reason,q30,p30,p60,ga,ha});
+ }
+ const riskOrder={priority:0,watch:1,low:2,sample:3};
+ candidates.sort((a,b)=>riskOrder[a.risk]-riskOrder[b.risk]||a.qty-b.qty||a.cat.localeCompare(b.cat));
+ candidateSource=candidates;
+ const blockers=issues.filter(x=>x.block),ready=blockers.length===0&&periodComplete;
+ $('dynamic-results').hidden=false;
+ renderStats([['有效分析天数',rangeDays+'天'],['记录SKU',grouped.size],['区间销量',nfmt(sum(clean,'qty'))],['候选复核SKU',candidates.length],['异常/待核验',blockers.length]]);
+ $('dynamicNotice').innerHTML=ready?
+ '<strong>统计结构初步通过：</strong>仍需人工核对后台在售SKU清单、售卖时长、活动属性与漏页问题；此处不自动认定为可执行下架。':
+ '<strong>当前为待核验分析：</strong>发现'+blockers.length+'项需核对事项'+(!periodComplete?'；数据周期不足90天，只能生成阶段性观察名单':'')+'。系统已对疑似重复行临时去重，不允许把候选直接作为正式下架指令。';
+ const checks=[
+ ['已识别源表',fileRecords.records.length+'个数据页',!!fileRecords.records.length],
+ ['字段行可用',nfmt(batchRows.length)+'条已解析',!!batchRows.length],
+ ['疑似重复数据',duplicates.length+'条',duplicates.length===0],
+ ['同维度数值冲突',conflicts.length+'条',conflicts.length===0],
+ ['错误日期 / 数值 / SKU',fileRecords.invalid+'条；详见异常',fileRecords.invalid===0],
+ ['全平台无记录日期',missingDays+'天（不等于漏数据）',missingDays===0],
+ ['有效90天分析窗',rangeDays+'天',periodComplete],
+ ['后台逐页/逐SKU覆盖', '仍需人工对账',false],
+ ['上架时间与在售状态', '订单导出不包含，待补充',false]
+ ];
+ $('dynamicChecks').innerHTML=checks.map(([name,val,ok])=>'<div class="dynamic-check-line"><span>'+esc(name)+'</span><b class="'+(ok?'ok':'')+'">'+esc(val)+'</b></div>').join('');
+ renderIssues(issues);
+ const categories=[...new Set(candidates.map(x=>x.cat))].sort();
+ $('candidateType').innerHTML='<option value="">全部品类</option>'+categories.map(c=>'<option>'+esc(c)+'</option>').join('');
+ $('candidateType').value='';
+ $('candidateRisk').value='';
+ $('candidateSearch').value='';
+ $('dynamicCandidateMeta').textContent='分析区间：'+start+' 至 '+cutEnd+' · '+$('batchPlatform').value+' · '+(periodComplete?'90天候选核查':'不足90天，仅观察线索')+' · 候选尚须人工审核';
+ analysis={start,end:cutEnd,platform:$('batchPlatform').value,rangeDays,blockers:blockers.length,hasDuplicates:duplicates.length,hasConflicts:conflicts.length,skuTotal:grouped.size,candidates};
+ renderCandidates();
+ setMessage('已解析 '+fileRecords.records.length+' 个数据页 / '+batchRows.length+' 条原始记录；分析结果已更新。'+(blockers.length?'存在待核验问题，请查看异常明细。':''),blockers.length?'':'success');
+}
+function auditKey(c){return [analysis.platform,analysis.start,analysis.end,c.key].join('|');}
+function renderCandidates(){
+ if(!analysis)return;
+ const term=$('candidateSearch').value.trim().toLowerCase(),cat=$('candidateType').value,risk=$('candidateRisk').value;
+ const arr=candidateSource.filter(c=>(!cat||c.cat===cat)&&(!risk||c.risk===risk)&&(!term||c.name.toLowerCase().includes(term)||c.id.includes(term)));
+ $('candidateCount').textContent='展示 '+arr.length+'/'+candidateSource.length+' 条';
+ $('candidateRows').innerHTML=arr.length?arr.map(c=>{
+  const review=state[auditKey(c)]||'待复核';
+  return '<tr><td><span class="priority-chip '+c.risk+'">'+esc(c.label)+'</span></td><td><strong>'+esc(c.name)+'</strong><small>ID: '+esc(c.id||'待核实')+'</small></td><td>'+esc(c.cat)+'</td><td>'+nfmt(c.qty)+'</td><td>'+nfmt(c.q30)+'</td><td>'+pct(c.ga)+'</td><td>'+pct(c.ha)+'</td><td class="reason">'+esc(c.reason)+'</td><td><select class="candidate-review" data-key="'+esc(auditKey(c))+'">'+['待复核','保留','持续观察','拟下架','已执行下架'].map(t=>'<option'+(review===t?' selected':'')+'>'+t+'</option>').join('')+'</select></td></tr>';
+ }).join(''):'<tr><td colspan="9">当前筛选条件下无候选商品；可清除筛选项，或导入更长区间数据重新分析。</td></tr>';
+}
+function exportCsv(name,columns,rows){
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const content='\uFEFF'+[columns,...rows].map(r=>r.map(quote).join(',')).join('\r\n');
+ const blob=new Blob([content],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+const drop=$('uploadDrop'),picker=$('uploadDataFiles');
+drop.addEventListener('click',()=>picker.click());drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();picker.click();}});
+['dragenter','dragover'].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.add('dragover');}));
+['dragleave','drop'].forEach(x=>drop.addEventListener(x,e=>{e.preventDefault();drop.classList.remove('dragover');}));
+drop.addEventListener('drop',e=>loadFiles([...e.dataTransfer.files]));
+picker.addEventListener('change',e=>{loadFiles([...e.target.files]);picker.value='';});
+async function loadFiles(files){
+ chosenFiles=files.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));
+ displayFiles();
+ $('runDataAnalysis').disabled=true;
+ if(!chosenFiles.length){setMessage('请选择Excel（.xlsx/.xls）或CSV文件。','error');return;}
+ setMessage('正在读取 '+chosenFiles.length+' 个文件并识别表头…');
+ try{
+ const result=await parseFiles(chosenFiles);
+ batchRows=result.rows;fileRecords={records:result.records,issues:result.issues,invalid:result.invalid};
+ if(!batchRows.length){setMessage('未找到可分析的商品销量数据：请核对文件表头或上传原始商城销售统计表。','error');$('dynamic-results').hidden=true;return;}
+ const sorted=batchRows.map(r=>r.date).sort();const first=sorted[0],last=sorted[sorted.length-1];
+ $('batchEnd').value=last;$('batchStart').value=plusDays(last,-89)>first?plusDays(last,-89):first;
+ $('runDataAnalysis').disabled=false;calc();
+ }catch(e){setMessage('读取失败：'+e.message,'error');$('dynamic-results').hidden=true;console.error(e);}
+}
+$('runDataAnalysis').addEventListener('click',calc);
+$('batchPlatform').addEventListener('change',()=>{if(batchRows.length)calc();});
+$('excludeToday').addEventListener('change',()=>{if(batchRows.length)calc();});
+['candidateType','candidateRisk','candidateSearch'].forEach(id=>$(id).addEventListener(id==='candidateSearch'?'input':'change',renderCandidates));
+$('candidateRows').addEventListener('change',e=>{const el=e.target;if(!el.classList.contains('candidate-review'))return;state[el.dataset.key]=el.value;try{localStorage.setItem('mall-dynamic-review-v1',JSON.stringify(state));}catch(error){alert('本机无法保存审核状态，请导出审核CSV备份。');}});
+$('exportCandidates').addEventListener('click',()=>{if(!analysis)return;exportCsv('商城下架候选_'+analysis.platform+'_'+analysis.start+'_'+analysis.end+'.csv',['平台','开始日期','截止日期','商品类别','商品ID','商品名称','处理优先级','期间销量','近30天销量','金币贡献%','荣誉券贡献%','候选原因','审核状态','异常待核数'],candidateSource.map(c=>[analysis.platform,analysis.start,analysis.end,c.cat,c.id,c.name,c.label,c.qty,c.q30,c.ga==null?'':c.ga.toFixed(3),c.ha==null?'':c.ha.toFixed(3),c.reason,state[auditKey(c)]||'待复核',analysis.blockers]));});
+$('exportIssues').addEventListener('click',()=>{if(!analysis)return;exportCsv('商城数据异常_'+analysis.platform+'_'+analysis.start+'_'+analysis.end+'.csv',['异常类型','来源文件/表页','原始行号','问题描述','是否阻断正式结论'],issuesAll.map(x=>[x.kind,x.file,x.row,x.msg,x.block?'是':'否']));});
+})();
+</script>
+
 </body>
 </html>
