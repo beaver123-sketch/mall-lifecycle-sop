@@ -212,11 +212,57 @@ function undoDelisted(key){
 function analyze(){const q=$('v2Quarter').value,r=qrange(q);if(!r)return;const errors=[],blocks=[],warnings=[],records=[],sources=[];
 for(const m of r.months){const slot=activeMonth(m);if(!slot?.files?.length){blocks.push(m+'月未上传');continue;}for(const f of slot.files){sources.push(f.name);records.push(...f.rows);errors.push(...f.issues);}}
 const today=new Date().toISOString().slice(0,10);if(r.end>=today)blocks.push('所选季度尚未结束（截止'+r.end+'），目前只能查看阶段性分析，不能生成最终下架名单');if(errors.some(x=>x.fatal))blocks.push('订单文件存在关键字段异常');if(!records.length)blocks.push(sources.length?'已保存'+sources.length+'份文件，但0条订单成功解析；请展开上方“所选月份文件解析情况”，查看具体原因':'本季度尚未保存可用订单文件');
-const seen=new Map(),distinct=[];for(const x of records){const k=[x.date,x.cat,x.id,x.term].join('|');if(!seen.has(k)){seen.set(k,x);distinct.push(x);continue;}
-const original=seen.get(k),same=['qty','gq','hq','ga','ha'].every(p=>original[p]===x[p]);errors.push(problem(same?'疑似重复':'同维度统计冲突',x.source,x.line,'与'+original.source+'第'+original.line+'行统计维度一致',!same));if(!same)blocks.push('订单统计冲突：'+x.source+' 第'+x.line+'行');}
+// Same-key records may be distinct sales or overlapping export snapshots.
+// Exact duplicates are skipped; conflicting values are quarantined, never silently added or first-wins.
+const groups=new Map();
+for(const x of records){
+ const k=[x.date,x.cat,x.id,x.term].join('|');
+ if(!groups.has(k))groups.set(k,[]);
+ groups.get(k).push(x);
+}
+const distinct=[],ambiguousIds=new Set(),collisionGroups=[],duplicateGroups=[];
+let exactDuplicateCount=0,conflictLineCount=0;
+for(const [key,items] of groups){
+ const unique=new Map();
+ for(const x of items){
+  const f=['qty','gq','hq','ga','ha'].map(k=>x[k]===null?'—':x[k]).join('|');
+  if(unique.has(f)){exactDuplicateCount++;continue;}
+  unique.set(f,x);
+ }
+ if(unique.size===1){
+  const one=items[0];distinct.push(one);
+  if(items.length>1)duplicateGroups.push({key,one,count:items.length-1});
+  continue;
+ }
+ const first=items[0];
+ ambiguousIds.add([first.cat,first.id].join('|'));
+ conflictLineCount+=items.length;
+ collisionGroups.push({key,items,unique:[...unique.values()],first});
+}
+if(exactDuplicateCount)warnings.push('已自动排除 '+exactDuplicateCount+' 条统计指标完全相同的重复行');
+if(collisionGroups.length){
+ const byFile=new Map();
+ for(const x of collisionGroups){
+  const file=x.first.source.split('/')[0];
+  byFile.set(file,(byFile.get(file)||0)+1);
+ }
+ const top=[...byFile].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f,n])=>f+' '+n+'组').join('、');
+ blocks.push('发现 '+collisionGroups.length+' 组同日商品统计口径不明，涉及 '+conflictLineCount+' 条记录（'+top+'）；已隔离相关商品，暂不生成正式下架名单');
+ errors.push(...collisionGroups.slice(0,30).map(x=>problem(
+  '同日商品多记录 · 待核对',x.first.source,x.first.line,
+  x.first.date+' · '+x.first.cat+' · ID '+x.first.id+' · '+(x.first.term||'未标期限')+
+  '；共'+x.items.length+'行，存在'+x.unique.length+'种数值；位置：'+x.items.slice(0,5).map(i=>i.source.split('/')[0]+' 第'+i.line+'行（'+i.qty+'件）').join('、')+
+  (x.items.length>5?'等':'')+'。不能确定是独立订单还是重复汇总，未参与销量计算',true)));
+ if(collisionGroups.length>30)errors.push(problem('其余同维度多记录','合并汇总','—','还有 '+(collisionGroups.length-30)+' 组，请检查相同日期+商品ID+购买期限的导出统计口径',true));
+}
+if(duplicateGroups.length){
+ errors.push(problem('完全重复已去重','本季度合并结果','—',
+  '共 '+exactDuplicateCount+' 条（'+duplicateGroups.length+' 组）指标完全一致的记录已排除，不属于阻断错误',false));
+}
 const datadays=new Set(distinct.map(x=>x.date));if(records.length&&datadays.size<r.days)warnings.push('有'+(r.days-datadays.size)+'个日期未在成功解析的订单中出现；可能无成交，也可能漏导');
+if(ambiguousIds.size)warnings.push('已暂时移除 '+ambiguousIds.size+' 个存在统计口径冲突的商品，避免把不可靠销量用于排名');
 const current=launchSet(platform,q),prior=launchSet(platform,prevQ(q));if(TYPES.every(t=>current[t].size===0))warnings.push('尚未填写本季度上新ID，可能误选新品');
-const group=new Map();for(const x of distinct){if(!TYPES.includes(x.cat))continue;const k=downKey(platform,x.cat,x.id);if(!group.has(k))group.set(k,{id:x.id,type:x.cat,name:x.name,qty:0,dates:new Set(),last:0,prev:0});const g=group.get(k);g.qty+=x.qty;if(x.qty>0)g.dates.add(x.date);
+const group=new Map();for(const x of distinct){if(!TYPES.includes(x.cat)||ambiguousIds.has([x.cat,x.id].join('|')))continue;const k=downKey(platform,x.cat,x.id);if(!group.has(k))group.set(k,{id:x.id,type:x.cat,name:x.name,qty:0,dates:new Set(),last:0,prev:0});const g=group.get(k);g.qty+=x.qty;if(x.qty>0)g.dates.add(x.date);
 if(x.date>=plus(r.end,-29))g.last+=x.qty;else if(x.date>=plus(r.end,-89))g.prev+=x.qty;}
 if(!group.size&&records.length)blocks.push('订单中没有五类可分析商品，请核对商品类型列');
 const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.type].has(g.id)?'本季度上新':prior[g.type].has(g.id)?'上季度上新':'';const down=delisted[downKey(platform,g.type,g.id)],reason=down?'已下架':p;
@@ -239,7 +285,7 @@ good.sort((x,y)=>x.activeDays-y.activeDays||x.qty-y.qty||tie(x,y));
  const quota=QUOTAS[type][1],limit=Math.max(0,quota-recorded);
  good.forEach((x,i)=>{if(i<limit)suggested.push(x);else{x.reason='对应执行季度下架额度已用尽';watch.push(x);}});
 stats[type]={eligible:xs.length,lowBoth:xs.filter(x=>lq.has(x.id)&&la.has(x.id)).length,registered:current[type].size,quota,executed:recorded,plan:QUOTAS[type][0],suggested:Math.min(limit,good.length)};}
-const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],warnings,errors,eligible:eligible.length,suggested,watch,stats,sourceCount:sources.length,dayCount:datadays.size};
+const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],warnings,errors,eligible:eligible.length,suggested,watch,stats,sourceCount:sources.length,dayCount:datadays.size,conflictGroups:collisionGroups.length,conflictRows:conflictLineCount,exactDuplicates:exactDuplicateCount};
 drawResults();if(formal)storeHistory(true);}
 function drawResults(){if(!results)return;const x=results;$('v2Results').hidden=false;
 $('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['季度额度剩余',Math.max(0,28-TYPES.reduce((a,t)=>a+x.stats[t].executed,0))]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
