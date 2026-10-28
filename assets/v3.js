@@ -3,11 +3,11 @@ const $=x=>document.getElementById(x);
 const TYPES=['头像框','派对背景','资料卡','聊天气泡','座驾'];
 const QUOTAS={'头像框':[12,8],'派对背景':[12,10],'资料卡':[12,5],'聊天气泡':[12,4],'座驾':[3,1]};
 const KEY_NEW='mall-sop-v31-new',KEY_DOWN='mall-sop-v31-delisted',KEY_HIST='mall-sop-v31-history';
-const ALIASES={date:['日期','统计日期','下单日期','交易日期','购买日期','date','day'],
-type:['商品类型','品类','商品类别','道具类型','类型','category','type'],
-name:['商品名称','商品名','道具名称','道具','商品','productname','itemname'],
-id:['商品id','道具id','商品编号','sku','skuid','itemid','productid'],
-qty:['总销量','销量','销售数量','商品销量','销售件数','总销售量','购买数量','quantity','totalqty'],
+const ALIASES={date:['日期','统计日期','下单日期','交易日期','购买日期','统计时间','销售日期','时间','date','day'],
+type:['商品类型','品类','商品类别','道具类型','类别','道具类别','类型','category','type'],
+name:['商品名称','商品名','道具名称','道具','商品','商品标题','商品信息','道具名','productname','itemname'],
+id:['商品id','道具id','商品编号','商品编码','道具编号','sku','skuid','itemid','productid'],
+qty:['总销量','销量','销售数量','商品销量','销售件数','总销售量','购买数量','总购买量','售出数量','quantity','totalqty'],
 gq:['金币销量','金币支付件数','金币购买件数','金币购买数量'],
 hq:['荣誉券销量','荣誉券支付件数','荣誉券购买件数','荣誉券购买数量'],
 ga:['金币金额','销售金币','金币收入','总销售金币'],
@@ -23,39 +23,56 @@ const get=(r,m,k)=>m[k]===undefined?'':(r[m[k]]??'');
 const $local=(key,def)=>{try{return JSON.parse(localStorage.getItem(key))??def;}catch(e){return def;}};
 function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));return true;}catch(e){msg('本机存储空间不足，请先导出备份','danger');return false;}}
 function msg(t,k=''){$('v2Status').textContent=t;$('v2Status').className='v2-alert '+k;}
-function date(v){if(typeof v==='number'&&v>20000&&v<80000)return new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000).toISOString().slice(0,10);
+function date(v){if(v instanceof Date&&!Number.isNaN(v.getTime()))return [v.getFullYear(),String(v.getMonth()+1).padStart(2,'0'),String(v.getDate()).padStart(2,'0')].join('-');if(typeof v==='number'&&v>20000&&v<80000)return new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000).toISOString().slice(0,10);
 const m=String(v??'').trim().match(/^(\d{4})[\/.\-年](\d{1,2})[\/.\-月](\d{1,2})/);if(!m)return '';
 const y=+m[1],mon=+m[2],d=+m[3],t=new Date(Date.UTC(y,mon-1,d));
 return t.getUTCFullYear()===y&&t.getUTCMonth()+1===mon&&t.getUTCDate()===d?y+'-'+String(mon).padStart(2,'0')+'-'+String(d).padStart(2,'0'):'';}
 function plus(s,n){const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
 function qrange(q){const m=/^(\d{4})-Q([1-4])$/.exec(q);if(!m)return null;const y=+m[1],n=+m[2],start=new Date(Date.UTC(y,3*n-3,1)).toISOString().slice(0,10),end=new Date(Date.UTC(y,3*n,0)).toISOString().slice(0,10);return {y,n,start,end,months:[n*3-2,n*3-1,n*3],days:Math.round((Date.parse(end)-Date.parse(start))/86400000)+1};}
 function prevQ(q){const r=qrange(q);return !r?'':r.n===1?(r.y-1)+'-Q4':r.y+'-Q'+(r.n-1);}
-function typeOf(s){s=String(s||'').trim();if(/派对背景|派对主题/.test(s))return '派对背景';if(/头像框|相框/.test(s))return '头像框';if(/资料卡/.test(s))return '资料卡';if(/聊天气泡|气泡/.test(s))return '聊天气泡';if(/座驾/.test(s))return '座驾';return s;}
+function typeOf(s){s=String(s||'').trim();if(/派对背景|派对主题|party\s*(background|theme)/i.test(s))return '派对背景';if(/头像框|相框|avatar\s*frame/i.test(s))return '头像框';if(/资料卡|profile\s*card/i.test(s))return '资料卡';if(/聊天气泡|气泡|chat\s*bubble/i.test(s))return '聊天气泡';if(/座驾|vehicle|ride/i.test(s))return '座驾';return s;}
 function extract(s){s=String(s||'').trim();const m=s.match(/[（(]\s*(\d+)\s*[）)]\s*$/);return {id:m?m[1]:'',name:m?s.slice(0,m.index).trim():s};}
 function numeric(s){if(s===null||s===undefined||String(s).trim()==='')return null;const v=String(s).replace(/[,，\s]/g,'');return /^-?\d+(\.\d+)?$/.test(v)?Number(v):NaN;}
-function header(matrix){for(let i=0;i<Math.min(matrix.length,35);i++){const m={};(matrix[i]||[]).forEach((x,j)=>{const v=norm(x);for(const [k,s] of Object.entries(H))if(m[k]===undefined&&s.has(v))m[k]=j;});if(m.date!==undefined&&m.name!==undefined&&m.qty!==undefined)return {i,m};}return null;}
+function header(matrix){for(let i=0;i<Math.min(matrix.length,35);i++){const m={};(matrix[i]||[]).forEach((x,j)=>{const v=norm(x);for(const [k,s] of Object.entries(H))if(m[k]===undefined&&s.has(v))m[k]=j;});if(m.date!==undefined&&m.name!==undefined&&(m.qty!==undefined||(m.gq!==undefined&&m.hq!==undefined)))return {i,m};}return null;}
 function csvRows(src){let result=[],line=[],cell='',q=false;src=src.replace(/^\uFEFF/,'');for(let i=0;i<src.length;i++){let c=src[i];if(q){if(c==='"'&&src[i+1]==='"'){cell+='"';i++;}else if(c==='"')q=false;else cell+=c;}else if(c==='"')q=true;else if(c===','){line.push(cell);cell='';}else if(c==='\r'||c==='\n'){if(c==='\r'&&src[i+1]==='\n')i++;line.push(cell);if(line.some(x=>String(x).trim()))result.push(line);line=[];cell='';}else cell+=c;}line.push(cell);if(line.some(x=>String(x).trim()))result.push(line);return result;}
 async function workbook(file){const buf=await file.arrayBuffer();if(/\.csv$/i.test(file.name)){let raw=new TextDecoder('utf-8').decode(buf);if(raw.includes('\ufffd'))raw=new TextDecoder('gb18030').decode(buf);return [{name:'CSV',rows:csvRows(raw)}];}
 if(!window.XLSX)throw Error('Excel解析组件未加载，请刷新网页或上传CSV文件');
 const book=XLSX.read(buf,{type:'array',cellDates:false});return book.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(book.Sheets[n],{header:1,raw:true,defval:'',blankrows:false})}));}
 function problem(kind,source,line,reason,fatal=false){return {kind,source,line,reason,fatal};}
-async function parseFile(file,platform,ym){let rows=[],issues=[],tabs=0;
-for(const tab of await workbook(file)){const h=header(tab.rows);if(!h)continue;tabs++;
-const fallback=[tab.name,file.name].map(typeOf).find(x=>TYPES.includes(x))||'';
-if(h.m.gq===undefined||h.m.hq===undefined)issues.push(problem('支付拆分字段缺失',file.name+'/'+tab.name,h.i+1,'缺少金币或荣誉券销量列',true));
-for(let j=h.i+1;j<tab.rows.length;j++){const raw=tab.rows[j];if(!raw.some(x=>String(x).trim()))continue;
-const product=extract(get(raw,h.m,'name')),id=String(get(raw,h.m,'id')||product.id).trim(),dt=date(get(raw,h.m,'date')),cat=typeOf(get(raw,h.m,'type')||fallback),
-qty=numeric(get(raw,h.m,'qty')),gq=numeric(get(raw,h.m,'gq')),hq=numeric(get(raw,h.m,'hq')),ga=numeric(get(raw,h.m,'ga')),ha=numeric(get(raw,h.m,'ha')),
-src=file.name+'/'+tab.name,lin=j+1,provided=String(get(raw,h.m,'platform')).toUpperCase();
-if(!dt||!id||!cat||!product.name||!Number.isInteger(qty)||qty<0){issues.push(problem('关键字段异常',src,lin,'日期/商品ID/品类/非负整数销量无法识别',true));continue;}
-if(dt.slice(0,7)!==ym){issues.push(problem('月份不符',src,lin,'订单日期'+dt+'不在选定月份'+ym+'内',true));continue;}
-if(provided&&((provided.includes('VONE')&&platform!=='VONE')||(provided.includes('POPPO')&&platform!=='POPPO'))){issues.push(problem('平台不符',src,lin,'导出数据平台与上传平台不一致',true));continue;}
-if([gq,hq,ga,ha].some(v=>v!==null&&(!Number.isFinite(v)||v<0))||[gq,hq].some(v=>v!==null&&!Number.isInteger(v))){issues.push(problem('支付数据错误',src,lin,'支付件数或金额存在非法数字',true));continue;}
-if(gq!==null&&hq!==null&&gq+hq!==qty){issues.push(problem('支付件数不符',src,lin,qty+'件总销量与两种支付渠道加总不一致',true));continue;}
-rows.push({date:dt,id,cat,name:product.name,qty,gq,hq,ga,ha,term:String(get(raw,h.m,'term')||''),source:src,line:lin});
-}}
-if(!tabs)issues.push(problem('无法识别表格',file.name,'—','缺少日期/商品名称/总销量等关键列',true));
-return {name:file.name,size:file.size,rows,issues,tabs,blob:file};}
+async function parseFile(file,platform){
+ let rows=[],issues=[],tabs=0,scanned=0,skipped=0,issueOverflow=0;
+ const add=(kind,source,line,reason,fatal=false)=>{
+   if(issues.length<80)issues.push(problem(kind,source,line,reason,fatal));else issueOverflow++;
+ };
+ for(const tab of await workbook(file)){
+  const h=header(tab.rows);if(!h)continue;
+  tabs++;const fallback=[tab.name,file.name].map(typeOf).find(x=>TYPES.includes(x))||'';
+  if(h.m.gq===undefined||h.m.hq===undefined)add('支付拆分不完整',file.name+'/'+tab.name,h.i+1,'缺少金币/荣誉券销量列；使用总销量分析，但无法核对支付拆分',false);
+  for(let j=h.i+1;j<tab.rows.length;j++){
+   const raw=tab.rows[j];if(!raw||!raw.some(x=>String(x??'').trim()))continue;
+   scanned++;
+   const source=file.name+'/'+tab.name,line=j+1,product=extract(get(raw,h.m,'name'));
+   let id=String(get(raw,h.m,'id')||product.id).trim();
+   id=id.replace(/\.0+$/,'');
+   const dt=date(get(raw,h.m,'date')),cat=typeOf(get(raw,h.m,'type')||fallback);
+   let qty=numeric(get(raw,h.m,'qty'));const gq=numeric(get(raw,h.m,'gq')),hq=numeric(get(raw,h.m,'hq')),ga=numeric(get(raw,h.m,'ga')),ha=numeric(get(raw,h.m,'ha'));
+   if(qty===null&&gq!==null&&hq!==null)qty=gq+hq;
+   if(!TYPES.includes(cat)){skipped++;if(cat&&/靓号|套餐|vip|其他|未知/i.test(cat))continue;add('品类无法识别',source,line,'原始品类='+String(get(raw,h.m,'type')||'空')+'；文件名/工作表无法推断属于五类中的哪一类',true);continue;}
+   if(!dt||!id||!product.name||!Number.isInteger(qty)||qty<0){
+    skipped++;const absent=[!dt?'日期':null,!id?'商品ID':null,!product.name?'商品名称':null,(!Number.isInteger(qty)||qty<0)?'总销量':null].filter(Boolean);
+    add('关键字段无法识别',source,line,'无法识别：'+absent.join('、')+'。商品原始值='+String(get(raw,h.m,'name')).slice(0,50),true);continue;
+   }
+   if([gq,hq,ga,ha].some(v=>v!==null&&(!Number.isFinite(v)||v<0))||[gq,hq].some(v=>v!==null&&!Number.isInteger(v))){
+    skipped++;add('支付数据错误',source,line,'商品 '+product.name+'（'+id+'）支付件数/金额存在非法值',true);continue;
+   }
+   if(gq!==null&&hq!==null&&gq+hq!==qty)add('支付件数不符',source,line,'商品 '+id+'：总销量 '+qty+'，金币 '+gq+'，荣誉券 '+hq+'；需核对是否还有其他支付方式',true);
+   rows.push({date:dt,id,cat,name:product.name,qty,gq,hq,ga,ha,term:String(get(raw,h.m,'term')||''),source,line});
+  }
+ }
+ if(!tabs)add('表头识别失败',file.name,'—','未找到日期、商品名称、销量列；支持原始商城订单统计表及字段同义名称',true);
+ if(issueOverflow)add('异常记录较多',file.name,'—','另外还有'+issueOverflow+'条异常未逐行列出，请优先核对前80条');
+ return {name:file.name,size:file.size,rows,issues,tabs,scanned,skipped,blob:file};
+}
 function openDb(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('浏览器不支持本地数据库，月度文件不能保存'));return;}
 const req=indexedDB.open('mall-month-archive-v3',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('data'))req.result.createObjectStore('data',{keyPath:'key'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 let db=null,year=2026,platform='POPPO',month=1,months=new Map(),results=null,launches=$local(KEY_NEW,{}),delisted=$local(KEY_DOWN,{}),history=$local(KEY_HIST,[]);
