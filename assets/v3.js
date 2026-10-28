@@ -2,7 +2,7 @@
 const $=x=>document.getElementById(x);
 const TYPES=['头像框','派对背景','资料卡','聊天气泡','座驾'];
 const QUOTAS={'头像框':[12,8],'派对背景':[12,10],'资料卡':[12,5],'聊天气泡':[12,4],'座驾':[3,1]};
-const KEY_NEW='mall-sop-v31-new',KEY_DOWN='mall-sop-v31-delisted',KEY_HIST='mall-sop-v31-history';
+const KEY_NEW='mall-sop-v31-new',KEY_DOWN='mall-sop-v31-delisted',KEY_HIST='mall-sop-v31-history',KEY_FILE_TYPE='mall-sop-v32-file-types';
 const ALIASES={date:['日期','统计日期','下单日期','交易日期','购买日期','统计时间','销售日期','时间','date','day'],
 type:['商品类型','品类','商品类别','道具类型','类别','道具类别','类型','category','type'],
 name:['商品名称','商品名','道具名称','道具','商品','商品标题','商品信息','道具名','productname','itemname'],
@@ -39,14 +39,14 @@ async function workbook(file){const buf=await file.arrayBuffer();if(/\.csv$/i.te
 if(!window.XLSX)throw Error('Excel解析组件未加载，请刷新网页或上传CSV文件');
 const book=XLSX.read(buf,{type:'array',cellDates:false});return book.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(book.Sheets[n],{header:1,raw:true,defval:'',blankrows:false})}));}
 function problem(kind,source,line,reason,fatal=false){return {kind,source,line,reason,fatal};}
-async function parseFile(file,platform){
+async function parseFile(file,platform,chosenType=''){
  let rows=[],issues=[],tabs=0,scanned=0,skipped=0,issueOverflow=0;
  const add=(kind,source,line,reason,fatal=false)=>{
    if(issues.length<80)issues.push(problem(kind,source,line,reason,fatal));else issueOverflow++;
  };
  for(const tab of await workbook(file)){
   const h=header(tab.rows);if(!h)continue;
-  tabs++;const fallback=[tab.name,file.name].map(typeOf).find(x=>TYPES.includes(x))||'';
+  tabs++;const fallback=chosenType||[tab.name,file.name].map(typeOf).find(x=>TYPES.includes(x))||'';
   if(h.m.gq===undefined||h.m.hq===undefined)add('支付拆分不完整',file.name+'/'+tab.name,h.i+1,'缺少金币/荣誉券销量列；使用总销量分析，但无法核对支付拆分',false);
   for(let j=h.i+1;j<tab.rows.length;j++){
    const raw=tab.rows[j];if(!raw||!raw.some(x=>String(x??'').trim()))continue;
@@ -71,14 +71,15 @@ async function parseFile(file,platform){
  }
  if(!tabs)add('表头识别失败',file.name,'—','未找到日期、商品名称、销量列；支持原始商城订单统计表及字段同义名称',true);
  if(issueOverflow)add('异常记录较多',file.name,'—','另外还有'+issueOverflow+'条异常未逐行列出，请优先核对前80条');
- return {name:file.name,size:file.size,rows,issues,tabs,scanned,skipped,blob:file};
+ return {name:file.name,size:file.size,rows,issues,tabs,scanned,skipped,categoryOverride:chosenType,blob:file};
 }
 function openDb(){return new Promise((resolve,reject)=>{if(!window.indexedDB){reject(Error('浏览器不支持本地数据库，月度文件不能保存'));return;}
 const req=indexedDB.open('mall-month-archive-v3',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('data'))req.result.createObjectStore('data',{keyPath:'key'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-let db=null,year=2026,platform='POPPO',month=1,months=new Map(),results=null,launches=$local(KEY_NEW,{}),delisted=$local(KEY_DOWN,{}),history=$local(KEY_HIST,[]);
+let db=null,year=2026,platform='POPPO',month=1,months=new Map(),results=null,launches=$local(KEY_NEW,{}),delisted=$local(KEY_DOWN,{}),fileTypes=$local(KEY_FILE_TYPE,{}),history=$local(KEY_HIST,[]);
 if(!Array.isArray(history))history=[];
 const monthKey=(p,y,m)=>p+'|'+y+'-'+String(m).padStart(2,'0');
 const downKey=(p,t,id)=>p+'|'+t+'|'+id;
+const fileTypeKey=(p,name)=>p+'|'+String(name).toLowerCase();
 function database(mode,cb){return new Promise((resolve,reject)=>{const tx=db.transaction('data',mode),req=cb(tx.objectStore('data'));let value;req.onsuccess=()=>value=req.result;req.onerror=()=>reject(req.error);tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);});}
 const readAll=()=>database('readonly',s=>s.getAll()),readOne=k=>database('readonly',s=>s.get(k)),writeOne=v=>database('readwrite',s=>s.put(v)),deleteOne=k=>database('readwrite',s=>s.delete(k));
 const activeMonth=m=>months.get(monthKey(platform,year,m));
@@ -96,6 +97,7 @@ function drawMonths(){
   const fatal=f.issues.filter(v=>v.fatal),warnings=f.issues.filter(v=>!v.fatal),sample=fatal.slice(0,3);
   return '<details class="v23-import-file" '+(f.rows.length===0?'open':'')+'><summary><strong>'+esc(f.name)+'</strong><span class="'+(fatal.length?'v23-import-bad':'v23-import-good')+'">'+format(f.rows.length)+'条有效 · '+fatal.length+'项错误'+(warnings.length?' · '+warnings.length+'条提示':'')+'</span></summary>'+
   '<div class="v23-import-info">'+(f.scanned!=null?'检查'+format(f.scanned)+'行，排除'+format(f.skipped)+'行。':'旧版已存记录，建议点击“重新解析”。')+
+  (f.issues.some(x=>x.kind==='品类无法识别')?'<label class="v23-select-cat">此文件未识别商品品类，请选择：<select data-file-cat="'+esc(f.name)+'"><option value="">选择商品品类</option>'+TYPES.map(t=>'<option value="'+t+'" '+((f.categoryOverride||fileTypes[fileTypeKey(platform,f.name)])===t?'selected':'')+'>'+t+'</option>').join('')+'</select></label>':'')+
   (sample.length?'<ul>'+sample.map(e=>'<li>'+esc(e.source)+' 第'+esc(e.line)+'行：'+esc(e.reason)+'</li>').join('')+'</ul>':'')+
   (fatal.length>3?'<small>其余问题可在页面底部「规则与说明 → 数据质量问题」中查看。</small>':'')+
   '</div></details>';
@@ -114,7 +116,7 @@ async function upload(files){
  uploading=true;$('v23Upload').disabled=true;
  try{
   msg('正在按实际订单日期识别、分月保存 '+files.length+'份文件…');
-  const parsed=[];for(const f of files)parsed.push(await parseFile(f,platform));
+  const parsed=[];for(const f of files)parsed.push(await parseFile(f,platform,fileTypes[fileTypeKey(platform,f.name)]||''));
   const updates=new Map(),invalid=[];
   for(const item of parsed){
    const grouping=new Map();
@@ -141,19 +143,20 @@ async function upload(files){
  }catch(e){msg('导入失败：'+e.message,'danger');}
  finally{uploading=false;$('v23Upload').disabled=false;}
 }
-async function reparseStoredFiles(){
+async function reparseStoredFiles(onlyName){
  if(uploading)return;
  uploading=true;$('v23Reparse').disabled=true;
  try{
   const all=await readAll(),backed=all.filter(x=>x.platform===platform&&x.ym.startsWith(year+'-'));
   const files=new Map(),missing=[];
   for(const group of backed)for(const f of group.files){
+   if(typeof onlyName==='string'&&f.name!==onlyName)continue;
    if(f.blob&&typeof f.blob.arrayBuffer==='function')files.set(f.name.toLowerCase(),f.blob);
    else if(!files.has(f.name.toLowerCase()))missing.push(f.name);
   }
   if(!files.size){msg('没有可重新解析的原始文件。之前通过JSON恢复的数据不含原始Excel，请重新上传对应文件。','danger');return;}
   const p=[...files.values()];const parsed=[];
-  for(const f of p)parsed.push(await parseFile(f,platform));
+  for(const f of p)parsed.push(await parseFile(f,platform,fileTypes[fileTypeKey(platform,f.name)]||''));
   const updates=new Map();
   for(const f of parsed){
    for(const row of f.rows){const ym=row.date.slice(0,7),k=ym+'|'+f.name.toLowerCase();if(!updates.has(k))updates.set(k,{ym,file:{...f,rows:[]}});updates.get(k).file.rows.push(row);}
@@ -280,7 +283,8 @@ $('v23DelistSearch').addEventListener('input',renderDelisted);$('v23DelistFilter
 $('v23ExportDelisted').addEventListener('click',exportDown);
 $('v23DelistedRows').addEventListener('click',e=>{const b=e.target.closest('[data-undo-down]');if(b)undoDelisted(b.dataset.undoDown);});
 $('v2CandidateRows').addEventListener('change',e=>{const b=e.target.closest('[data-down-checkbox]');if(b&&b.checked)recordDelisted(b.dataset.downCheckbox);});
-$('v23Reparse').addEventListener('click',reparseStoredFiles);
+$('v23Reparse').addEventListener('click',()=>reparseStoredFiles());
+$('v23ParseDetails').addEventListener('change',e=>{const sel=e.target.closest('[data-file-cat]');if(!sel||!sel.value)return;fileTypes[fileTypeKey(platform,sel.dataset.fileCat)]=sel.value;save(KEY_FILE_TYPE,fileTypes);reparseStoredFiles(sel.dataset.fileCat);});
 }
 start().catch(e=>msg('初始化失败：'+e.message,'danger'));
 })();
