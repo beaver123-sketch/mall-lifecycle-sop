@@ -119,7 +119,7 @@ const current=launchSet(platform,q),prior=launchSet(platform,prevQ(q));if(TYPES.
 const group=new Map();for(const x of distinct){if(!TYPES.includes(x.cat))continue;const k=downKey(platform,x.cat,x.id);if(!group.has(k))group.set(k,{id:x.id,type:x.cat,name:x.name,qty:0,dates:new Set(),last:0,prev:0});const g=group.get(k);g.qty+=x.qty;if(x.qty>0)g.dates.add(x.date);
 if(x.date>=plus(r.end,-29))g.last+=x.qty;else if(x.date>=plus(r.end,-89))g.prev+=x.qty;}
 if(!group.size)blocks.push('没有可识别的五类商品');
-const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.type].has(g.id)?'本季度上新':prior[g.type].has(g.id)?'上季度上新':'';const down=delisted[downKey(platform,g.type,g.id)],reason=down&&down.date<=r.end?'已下架':p;
+const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.type].has(g.id)?'本季度上新':prior[g.type].has(g.id)?'上季度上新':'';const down=delisted[downKey(platform,g.type,g.id)],reason=down?'已下架':p;
 const item={...g,activeDays:g.dates.size,activeRate:g.dates.size/r.days,saleDays:r.days,rankQty:0,rankActive:0,reason,grade:'C'};(reason?excluded:eligible).push(item);}
 const stats={},suggested=[],watch=[];for(const type of TYPES){const xs=eligible.filter(x=>x.type===type),count=Math.ceil(xs.length*.25),tie=(a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true});
 const a=xs.slice().sort((x,y)=>x.qty-y.qty||tie(x,y)),b=xs.slice().sort((x,y)=>x.activeRate-y.activeRate||tie(x,y));a.forEach((x,i)=>x.rankQty=i+1);b.forEach((x,i)=>x.rankActive=i+1);
