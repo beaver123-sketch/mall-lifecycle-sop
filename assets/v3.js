@@ -121,7 +121,8 @@ if(x.date>=plus(r.end,-29))g.last+=x.qty;else if(x.date>=plus(r.end,-89))g.prev+
 if(!group.size)blocks.push('没有可识别的五类商品');
 const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.type].has(g.id)?'本季度上新':prior[g.type].has(g.id)?'上季度上新':'';const down=delisted[downKey(platform,g.type,g.id)],reason=down?'已下架':p;
 const item={...g,activeDays:g.dates.size,activeRate:g.dates.size/r.days,saleDays:r.days,rankQty:0,rankActive:0,reason,grade:'C'};(reason?excluded:eligible).push(item);}
-const stats={},suggested=[],watch=[];for(const type of TYPES){const xs=eligible.filter(x=>x.type===type),count=Math.ceil(xs.length*.25),tie=(a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true});
+const execQuarter=r.n===4?(r.y+1)+'-Q1':r.y+'-Q'+(r.n+1),execRange=qrange(execQuarter);
+ const stats={},suggested=[],watch=[];for(const type of TYPES){const xs=eligible.filter(x=>x.type===type),count=Math.ceil(xs.length*.25),tie=(a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true});
 const a=xs.slice().sort((x,y)=>x.qty-y.qty||tie(x,y)),b=xs.slice().sort((x,y)=>x.activeRate-y.activeRate||tie(x,y));a.forEach((x,i)=>x.rankQty=i+1);b.forEach((x,i)=>x.rankActive=i+1);
 const strictLow=(arr,k)=>{
   if(!count)return new Set();
@@ -133,14 +134,17 @@ const strictLow=(arr,k)=>{
 for(const x of xs){const mean=x.prev/2,rebound=x.last>=5&&(mean===0||x.last>=mean*1.2),both=lq.has(x.id)&&la.has(x.id);
 if(both&&!rebound){x.grade='A';x.reason='季度销量和成交活跃度均处后25%，近期没有明显回升';good.push(x);}
 else if(both||lq.has(x.id)||la.has(x.id)){x.grade='B';x.reason=rebound?'近期需求明显回升':lq.has(x.id)?'仅季度销量后25%':'仅成交活跃度后25%';watch.push(x);}}
-good.sort((x,y)=>x.activeDays-y.activeDays||x.qty-y.qty||tie(x,y));const limit=QUOTAS[type][1];good.forEach((x,i)=>{if(i<limit)suggested.push(x);else{x.reason='超出本季度该品类配额';watch.push(x);}});
-stats[type]={eligible:xs.length,lowBoth:xs.filter(x=>lq.has(x.id)&&la.has(x.id)).length,registered:current[type].size,quota:limit,plan:QUOTAS[type][0],suggested:Math.min(limit,good.length)};}
+good.sort((x,y)=>x.activeDays-y.activeDays||x.qty-y.qty||tie(x,y));
+ const recorded=Object.values(delisted).filter(v=>v.platform===platform&&v.type===type&&v.date>=execRange.start&&v.date<=execRange.end).length;
+ const quota=QUOTAS[type][1],limit=Math.max(0,quota-recorded);
+ good.forEach((x,i)=>{if(i<limit)suggested.push(x);else{x.reason='对应执行季度下架额度已用尽';watch.push(x);}});
+stats[type]={eligible:xs.length,lowBoth:xs.filter(x=>lq.has(x.id)&&la.has(x.id)).length,registered:current[type].size,quota,executed:recorded,plan:QUOTAS[type][0],suggested:Math.min(limit,good.length)};}
 const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],warnings,errors,eligible:eligible.length,suggested,watch,stats,sourceCount:sources.length,dayCount:datadays.size};
 drawResults();if(formal)storeHistory(true);}
 function drawResults(){if(!results)return;const x=results;$('v2Results').hidden=false;
-$('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['总配额上限',28]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
+$('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['季度额度剩余',Math.max(0,28-TYPES.reduce((a,t)=>a+x.stats[t].executed,0))]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
 $('v2Quality').className='v2-alert '+(x.formal?'good':'danger');$('v2Quality').innerHTML='<b>'+(x.formal?'已完成本季度分析':'数据暂不满足正式下架条件')+'</b><div>'+esc([...x.blocks,...x.warnings].join('；')||'数据结构未发现关键异常，仍建议确认后台导出覆盖完整。')+'</div><small>'+x.sourceCount+'份文件 · '+x.dayCount+'/'+x.r.days+'个日期有成交记录</small>';
-$('v2Overview').innerHTML=TYPES.map(t=>{const v=x.stats[t];return '<tr><td><b>'+t+'</b></td><td>'+v.plan+'</td><td>'+v.registered+'</td><td>'+v.quota+'</td><td>'+v.eligible+'</td><td>'+v.lowBoth+'</td><td><b>'+(x.formal?v.suggested:'待核验')+'</b></td><td>'+(x.formal?v.plan-v.suggested:'—')+'</td></tr>';}).join('')+'<tr><td><b>合计</b></td><td>51</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].registered,0)+'</td><td>28</td><td>'+x.eligible+'</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].lowBoth,0)+'</td><td><b>'+(x.formal?x.suggested.length:'待核验')+'</b></td><td>'+(x.formal?51-x.suggested.length:'—')+'</td></tr>';
+$('v2Overview').innerHTML=TYPES.map(t=>{const v=x.stats[t];return '<tr><td><b>'+t+'</b></td><td>'+v.plan+'</td><td>'+v.registered+'</td><td>'+v.quota+(v.executed?'（已执行'+v.executed+'）':'')+'</td><td>'+v.eligible+'</td><td>'+v.lowBoth+'</td><td><b>'+(x.formal?v.suggested:'待核验')+'</b></td><td>'+(x.formal?v.plan-v.suggested:'—')+'</td></tr>';}).join('')+'<tr><td><b>合计</b></td><td>51</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].registered,0)+'</td><td>28</td><td>'+x.eligible+'</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].lowBoth,0)+'</td><td><b>'+(x.formal?x.suggested.length:'待核验')+'</b></td><td>'+(x.formal?51-x.suggested.length:'—')+'</td></tr>';
 $('v2CandidateCaption').textContent=x.formal?'已按规则生成商品ID，可在商城后台执行下架':'缺少季度月份数据或有关键问题，暂不允许导出正式下架名单';
 drawCandidates();
 $('v2ObserveRows').innerHTML=x.watch.slice(0,100).map(v=>'<tr><td><span class="v2-label b">观察</span></td><td><b>'+esc(v.name)+'</b><br><small>'+esc(v.id)+'</small></td><td>'+esc(v.type)+'</td><td>'+format(v.qty)+'</td><td>'+v.activeDays+'天</td><td>'+format(v.last)+'</td><td>'+esc(v.reason)+'</td></tr>').join('')||'<tr><td colspan="7">暂无观察商品</td></tr>';$('v2ObserveInfo').textContent='共'+x.watch.length+'条（展示前100条）';
