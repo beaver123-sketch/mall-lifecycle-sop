@@ -90,3 +90,6 @@ body{background:#f6f8fb!important}
 .v23-check-done input{width:16px;height:16px;accent-color:#2f65c6;cursor:pointer}
 .v23-check-done input:disabled{cursor:not-allowed;opacity:.5}
 @media(max-width:650px){.v23-import-file summary{align-items:flex-start;flex-direction:column}.v23-import-file summary span{white-space:normal}}
+
+.v23-select-cat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff8eb;border-radius:6px;padding:8px 10px;color:#8a652b;margin:8px 0;font-size:12px}
+.v23-select-cat select{padding:6px 8px;border:1px solid #e3c996;border-radius:5px;color:#394d65;background:white;font-size:12px}
