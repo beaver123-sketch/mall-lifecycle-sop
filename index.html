@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>商城商品动态上下架管理 V2.0</title>
+<title>商城商品动态上下架管理 V2.1</title>
 <style>
 :root {
   --bg: #0f1115;
@@ -588,32 +588,37 @@ header.page h1{color:#182b46;letter-spacing:0}
 </head>
 <body>
 <div class="wrap">
-  <header class="page"><div class="v2-headline"><h1>商城商品动态上下架管理 · V2.0</h1><span class="v2-pill">固定公式 · 持续增长</span></div><div class="sub">上传季度在售商品订单，填写本季上新ID，自动计算双后25%、排除近期回升并生成下架名单。</div></header>
+  <header class="page"><div class="v2-headline"><h1>商城商品动态上下架管理 · V2.1</h1><span class="v2-pill">固定公式 · 持续增长</span></div><div class="sub">上传季度在售商品订单，填写本季上新ID，自动计算双后25%、排除近期回升并生成下架名单。</div></header>
   
 <div class="v2-topline">每月上新17个 · 每季度计划上新51个 · 季度下架上限28个 · 商品池持续增长</div><nav class="sop-nav"><a href="#v2-upload">数据上传</a><a href="#v2-summary-anchor">季度汇总</a><a href="#v2-candidates">下架名单</a><a href="#v2-observe">持续观察</a><a href="#v2-sop">计算规则</a><a href="#v2-history">历史记录</a></nav><main class="v2-main">
 <section class="v2-panel" id="v2-upload">
- <div class="v2-section-title"><h2>01 / 上传本季度数据</h2><span class="v2-pill">每季度一次，上传即分析</span></div>
- <div class="v2-grid v21-upload-grid">
-  <div class="v2-stack">
-    <div class="v2-upload" id="v2OrderDrop" tabindex="0" role="button"><strong>⇧ 上传本季度商城订单</strong><span class="v2-muted">点击或拖入多个 Excel / CSV 文件</span><small>以订单中的商品作为当前在售分析范围，按商品ID合并不同购买期限</small></div>
-    <input hidden id="v2OrderInput" type="file" multiple accept=".csv,.xls,.xlsx" />
-    <div class="v2-file-list" id="v2OrderFiles"></div>
-  </div>
-  <div class="v2-new-products">
-    <div class="v21-new-head"><strong>填写本季度上新商品ID</strong><span class="v2-mini" id="v21NewStatus">选择季度后填写，每个品类可填写多个ID</span></div>
-    <div class="v21-new-grid">
-      <label>头像框<textarea class="v21-new-id" data-category="头像框" placeholder="例如 1417, 1416" rows="2"></textarea></label>
-      <label>派对背景<textarea class="v21-new-id" data-category="派对背景" placeholder="例如 1382, 1362" rows="2"></textarea></label>
-      <label>资料卡<textarea class="v21-new-id" data-category="资料卡" placeholder="输入ID，逗号或换行分隔" rows="2"></textarea></label>
-      <label>聊天气泡<textarea class="v21-new-id" data-category="聊天气泡" placeholder="输入ID，逗号或换行分隔" rows="2"></textarea></label>
-      <label>座驾<textarea class="v21-new-id" data-category="座驾" placeholder="输入本季度新座驾ID" rows="2"></textarea></label>
-    </div>
-    <p class="v2-mini">填写本季度上新ID即可保护新品；上季度已填写的ID也会自动延续保护。本机保存，切换季度可重新查看。</p>
-    <div class="v2-flex"><button class="v2-button alt" id="v21SaveNew" type="button">保存上新ID并更新分析</button><button class="v2-button alt" id="v21ExportNew" type="button">导出上新ID记录</button></div>
-  </div>
+ <div class="v2-section-title"><div><h2>01 / 月度数据仓库</h2><p class="v2-muted">选年份、逐月保存商城订单；季度分析直接合并该季度的3个月，无需重复上传。</p></div><span class="v2-pill">本机持久保存 · 自动复用</span></div>
+ <div class="v23-toolbar">
+  <label class="v2-field">年份<input type="number" id="v23Year" min="2020" max="2100" value="2026" /></label>
+  <label class="v2-field">平台<select id="v2Platform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label>
+  <label class="v2-field">分析季度<select id="v2Quarter"><option value="2026-Q1">2026年第1季度</option><option value="2026-Q2">2026年第2季度</option><option value="2026-Q3">2026年第3季度</option><option value="2026-Q4">2026年第4季度</option></select></label>
+  <button id="v2Run" class="v2-button" type="button">分析已保存季度数据</button>
  </div>
- <div class="v2-flex" style="padding:15px 0 3px"><label class="v2-field">商城平台<select id="v2Platform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label><label class="v2-field">分析季度<select id="v2Quarter"><option value="">上传后自动识别</option></select></label><button id="v2Run" class="v2-button" type="button" disabled>重新按固定规则分析</button><span class="v2-muted">文件只在浏览器内计算，不上传到GitHub</span></div>
- <div id="v2Status" class="v2-alert">上传季度订单、填写本季度各品类上新ID，系统将自动生成下架名单。没有成交记录的商品不在订单中，本工具无法识别。</div>
+ <div class="v23-months" id="v23Months" aria-label="每月数据仓库"></div>
+ <div class="v23-month-action">
+  <div><b id="v23SelectedMonth">当前选择：2026年1月</b><p class="v2-muted">每个月可以上传多个品类文件。再次上传同名文件会替换该月旧文件，其余文件保留。</p></div>
+  <div class="v2-flex"><button class="v2-button" id="v23Upload" type="button">＋ 上传到所选月份</button><button class="v2-button alt" id="v23DownloadMonth" type="button">下载所选月源文件</button><button class="v2-button warning" id="v23RemoveMonth" type="button">清空所选月</button></div>
+  <input type="file" id="v23FileInput" multiple hidden accept=".xlsx,.xls,.csv" />
+ </div>
+ <div id="v2OrderFiles" class="v2-file-list"></div>
+ <div class="v2-flex v23-backup"><button class="v2-button alt" id="v23BackupYear" type="button">备份本年度数据（JSON）</button><button class="v2-button alt" id="v23RestoreYear" type="button">恢复备份</button><input type="file" id="v23RestoreInput" hidden accept=".json,application/json" /><span class="v2-muted">仅保存在当前浏览器，清除浏览器数据或更换设备前请备份。</span></div>
+ <div class="v23-new-products">
+  <div class="v2-section-title"><div><h3>本季度上新商品ID</h3><p class="v2-muted">填写各品类本季度新增商品ID，自动排除本季度及上季度登记的新品。切换季度时自动读取已保存记录。</p></div><span class="v2-mini" id="v23NewStatus">尚未登记</span></div>
+  <div class="v23-new-grid">
+   <label>头像框<textarea class="v23-new-id" data-category="头像框" rows="2" placeholder="例如：1417, 1416"></textarea></label>
+   <label>派对背景<textarea class="v23-new-id" data-category="派对背景" rows="2" placeholder="例如：1382, 1362"></textarea></label>
+   <label>资料卡<textarea class="v23-new-id" data-category="资料卡" rows="2" placeholder="商品ID，用逗号或换行分隔"></textarea></label>
+   <label>聊天气泡<textarea class="v23-new-id" data-category="聊天气泡" rows="2" placeholder="商品ID，用逗号或换行分隔"></textarea></label>
+   <label>座驾<textarea class="v23-new-id" data-category="座驾" rows="2" placeholder="例如：1522"></textarea></label>
+  </div>
+  <div class="v2-flex"><button class="v2-button alt" id="v23SaveNew" type="button">保存上新ID并重新分析</button><button class="v2-button alt" id="v23ExportNew" type="button">导出上新ID记录</button></div>
+ </div>
+ <div id="v2Status" class="v2-alert">请选择月份上传订单；数据保存后将显示“已上传”。至少保存季度对应3个月数据后才能生成正式下架名单。</div>
 </section>
 <section class="v2-panel"><h2>下架判断流程</h2><div class="v2-rules">
  <div class="v2-rule"><b>① 数据汇总</b><span>按平台、品类、商品ID汇总完整季度，不同购买期限合并。</span></div>
@@ -5390,7 +5395,7 @@ header.page h1{color:#182b46;letter-spacing:0}
 
 </script>
 
-<script src="assets/v2.js" defer></script>
+<script src="assets/v3.js" defer></script>
 
 </body>
 </html>
