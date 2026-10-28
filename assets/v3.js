@@ -285,7 +285,9 @@ good.sort((x,y)=>x.activeDays-y.activeDays||x.qty-y.qty||tie(x,y));
  const quota=QUOTAS[type][1],limit=Math.max(0,quota-recorded);
  good.forEach((x,i)=>{if(i<limit)suggested.push(x);else{x.reason='对应执行季度下架额度已用尽';watch.push(x);}});
 stats[type]={eligible:xs.length,lowBoth:xs.filter(x=>lq.has(x.id)&&la.has(x.id)).length,registered:current[type].size,quota,executed:recorded,plan:QUOTAS[type][0],suggested:Math.min(limit,good.length)};}
-const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],warnings,errors,eligible:eligible.length,suggested,watch,stats,sourceCount:sources.length,dayCount:datadays.size,conflictGroups:collisionGroups.length,conflictRows:conflictLineCount,exactDuplicates:exactDuplicateCount};
+const allConflictDetails=collisionGroups.map(g=>problem('同日商品多记录 · 待核对',g.first.source,g.first.line,
+ g.first.date+' | '+g.first.cat+' | ID '+g.first.id+' | 期限'+g.first.term+' | '+g.items.length+'行 | 数值:'+g.unique.map(x=>x.qty+'件（金'+x.gq+' 荣'+x.hq+'）').join(' / ')+' | 来源行:'+g.items.map(x=>x.source+' #'+x.line).join('、'),true));
+const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],warnings,errors,allConflictDetails,eligible:eligible.length,suggested,watch,stats,sourceCount:sources.length,dayCount:datadays.size,conflictGroups:collisionGroups.length,conflictRows:conflictLineCount,exactDuplicates:exactDuplicateCount};
 drawResults();if(formal)storeHistory(true);}
 function drawResults(){if(!results)return;const x=results;$('v2Results').hidden=false;
 $('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['季度额度剩余',Math.max(0,28-TYPES.reduce((a,t)=>a+x.stats[t].executed,0))]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
@@ -314,7 +316,11 @@ function drawCandidates(){if(!results)return;const t=$('v2FilterCat').value,sear
 const a=results.suggested.filter(x=>(!t||x.type===t)&&(!search||x.id.includes(search)||x.name.toLowerCase().includes(search)));$('v2CandidateCount').textContent=a.length+'条';
 $('v2CandidateRows').innerHTML=a.map(v=>'<tr><td><span class="v2-label '+(results.formal?'a':'hold')+'">'+(results.formal?'建议下架':'待核验')+'</span></td><td><b>'+esc(v.name)+'</b><br><small>ID '+esc(v.id)+'</small></td><td>'+esc(v.type)+'</td><td>'+format(v.qty)+'</td><td>'+v.activeDays+'/'+v.saleDays+'（'+ratio(v.activeRate)+'）</td><td>'+v.rankQty+'/'+results.stats[v.type].eligible+'</td><td>'+v.rankActive+'/'+results.stats[v.type].eligible+'</td><td>'+format(v.last)+'</td><td>'+esc(v.reason)+'</td><td><label class="v23-check-done"><input type="checkbox" data-down-checkbox="'+esc(downKey(platform,v.type,v.id))+'" '+(results.formal?'':'disabled title="数据未通过校验"')+' /> 已下架</label></td></tr>').join('')||'<tr><td colspan="10" class="v2-empty">没有满足条件的下架商品</td></tr>';}
 function exportCandidates(){if(!results?.formal)return;toCsv('建议下架_'+platform+'_'+results.q+'.csv',['平台','季度','品类','商品ID','名称','季度销量','成交天数','成交活跃度','销量排名','活跃度排名','近30天','前60天','原因'],results.suggested.map(v=>[platform,results.q,v.type,v.id,v.name,v.qty,v.activeDays,ratio(v.activeRate),v.rankQty,v.rankActive,v.last,v.prev,v.reason]));}
-function exportIssues(){if(!results)return;toCsv('数据异常_'+platform+'_'+results.q+'.csv',['是否阻断','异常','来源','行号','内容'],results.errors.map(e=>[e.fatal?'是':'否',e.kind,e.source,e.line,e.reason]));}
+function exportIssues(){if(!results)return;const items=[
+ ...results.errors.filter(e=>e.kind!=='同日商品多记录 · 待核对'&&e.kind!=='其余同维度多记录'),
+ ...(results.allConflictDetails||[])];
+toCsv('数据异常_'+platform+'_'+results.q+'.csv',['是否阻断','异常','来源','行号','内容'],
+ items.map(e=>[e.fatal?'是':'否',e.kind,e.source,e.line,e.reason]));}
 function exportNew(){let a=[];for(const [k,v] of Object.entries(launches)){const [p,q]=k.split('|');if(p!==platform)continue;for(const t of TYPES)for(const id of v[t]||[])a.push([p,q,t,id]);}toCsv('季度上新ID_'+platform+'.csv',['平台','季度','品类','商品ID'],a);}
 function exportDown(){toCsv('已下架记录_'+platform+'.csv',['平台','品类','商品ID','商品名称','下架日期','备注'],downRecords().map(x=>[x.platform,x.type,x.id,x.name,x.date,x.note]));}
 function storeHistory(quiet=false){if(!results?.formal)return;const z={platform,quarter:results.q,eligible:results.eligible,total:results.suggested.length,time:new Date().toISOString(),items:results.suggested.map(v=>({type:v.type,id:v.id,name:v.name}))};
