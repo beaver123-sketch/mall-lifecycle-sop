@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>商城动态下架管理 · SOP V1.1 / 历史数据基线</title>
+<title>商城动态下架管理 · SOP V1.2 / 历史数据基线</title>
 <style>
 :root {
   --bg: #0f1115;
@@ -501,6 +501,89 @@ html { scroll-behavior: smooth; }
 .no-match {display:none;padding:18px;color:#bfccdd;}
 @media(max-width:1100px){.sop-steps{grid-template-columns:repeat(3,1fr)}.sop-step:nth-child(3)::after{display:none}.audit-grid{grid-template-columns:1fr}}
 @media(max-width:650px){body{padding:18px 12px 50px}.sop-steps{grid-template-columns:repeat(2,1fr)}.sop-step::after{display:none}.cards{grid-template-columns:repeat(2,1fr)}.tr-grid{grid-template-columns:repeat(2,1fr)}.sop-block{padding:14px}.toolbar{position:static;flex-wrap:wrap}.filter-controls{align-items:stretch}}
+
+/* === V1.2 white workspace, keep legacy semantics and interaction === */
+:root{--bg:#f5f7fb;--panel:#ffffff;--panel-2:#f7f9fc;--border:#dfe5ed;--text:#203047;--text-dim:#617089;--text-mute:#8190a3;--accent:#315fd3;--coin:#aa7517;--honor:#7951af;--critical:#c94c5a;--warn:#aa691d;--ok:#16845b;--row-critical:rgba(220,66,77,.075);--row-warn:rgba(218,145,40,.075);--row-hover:rgba(49,95,211,.045);--mutedbg:#f5f7fc;--teal:#0f7e9b}
+body{background:var(--bg);color:var(--text)}
+header.page h1{color:#182b46;letter-spacing:0}
+.card,.section,.threshold-rules,.type-strip,.toolbar,.callout,.sop-block,.sop-footer{box-shadow:0 1px 3px rgba(32,48,71,.025)}
+.card.critical{background:linear-gradient(180deg,#fff 0%,#fff5f5 100%)}.card.warn{background:linear-gradient(180deg,#fff 0%,#fff9ef 100%)}
+.sop-nav a{color:#38516f;background:white;border-color:var(--border)}.sop-nav a:hover{color:var(--accent);background:#eef4ff}
+.notice-legacy{color:#805016;background:#fffbf1;border-color:#edd1a2}.notice-legacy b{color:#805016}
+.v-label{background:#e6f7ef;color:#096945;border-color:#b5e4cf}
+.sop-title{color:#1b2e4b}.sop-sub{color:#65758e}
+.sop-step{background:#f8faff;border-color:#dce6f3}.sop-step b{color:#203047}.sop-step .num{color:#275cc9}.sop-step p{color:#64768c}
+.sop-step:not(:last-child)::after{color:#7797ce}
+.sop-table th{background:#f0f5fa;color:#324968}.sop-table td{color:#3d5068}.sop-table td strong{color:#203047}
+.sop-small{color:#586d86}.sop-note{background:#f0f5ff;border-color:#7399e8;color:#3d5b80}
+.check-gate{background:#f8fafc;border-color:#e0e7f0}.check-gate h3{color:#203047}.gate-item{color:#41566e}.gate-status{color:#955d18}.gate-status.ready{color:#147651}
+.filter-controls{background:#f7faff;border-color:#dfe7f2}.filter-controls label{color:#445b78}
+.filter-controls select,.filter-controls input,.review-select{background:#fff;color:#283d58;border-color:#d1dce9}
+.review-select.status-watch{color:#9b650b;border-color:#daa958}.review-select.status-delisting{color:#bc3e55;border-color:#e3a6ae}.review-select.status-retain{color:#187c54;border-color:#9acdb5}
+.btn-primary{background:#315fd3;border-color:#315fd3;color:white}.btn-primary:hover{background:#244caa;color:white}
+.audit-button{background:#f2f6fd;color:#365477;border-color:#cbd9e9}.audit-note{color:#627a95}
+.risk{background:#e9eff5;color:#50647e}.risk.p0{background:#fae4e7;color:#b23b4c}.risk.p1{background:#fff1df;color:#986218}.risk.p2{background:#fff6e2;color:#886723}.risk.mixed{background:#e8efff;color:#335cc1}
+.review-status{color:#36526c}.changelog{color:#4c6680}.changelog li{border-color:#e3e8ef}.empty-state{color:#8091a3}
+.sop-footer{background:#f3f7fd;border-color:#dce8f6;color:#455b76}.no-match{color:#61758c}
+.tr-head{color:#a4404c}.tr-th b{color:#b34251}.tr-meta b{color:#9b712e}
+.section-head{background:#f7f9fc}.num.coin{color:#a46c13}.num.honor{color:#7e56ac}
+.bar-label,.row-visual{color:var(--text)}
+.pay-label.coin{color:#a66c0c}.pay-label.honor{color:#7852a9}
+.review-select,.filter-controls input,.filter-controls select{color-scheme:light}
+.toolbar{background:rgba(255,255,255,.96);backdrop-filter:blur(9px)}
+.btn{background:white;color:#304563;border-color:#d3deea}.btn:hover{background:#f0f5ff;color:#244caa}.btn-warn{color:#ad5d34}.btn-ghost{color:#66758d}
+.btn-primary{background:#315fd3;border-color:#315fd3;color:#fff}.btn-primary:hover{background:#244da9;color:#fff}
+.reference-accordion{margin-bottom:18px;border:1px solid var(--border);border-radius:9px;background:#fff}
+.reference-accordion summary{cursor:pointer;padding:14px 18px;color:#405875;font-weight:600}
+.reference-accordion>.threshold-rules{margin:6px 14px 12px}.reference-accordion>.type-strip{margin:10px 14px 18px}
+.upload-section{margin-top:12px;padding:22px 24px}.upload-heading{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.eyebrow{display:block;font-size:11px;color:#315fd3;font-weight:750;letter-spacing:1.1px;margin-bottom:7px}
+.stage-tag{white-space:nowrap;background:#eaf2ff;border:1px solid #d1e3ff;color:#315fd3;padding:6px 10px;border-radius:20px;font-size:12px}
+.upload-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);gap:16px}
+.upload-drop{border:1.7px dashed #9ebce3;border-radius:11px;background:#f8fbff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 12px;min-height:210px;gap:9px;color:#294b75;cursor:pointer}
+.upload-drop:hover,.upload-drop.dragover{background:#edf5ff;border-color:#315fd3}
+.upload-drop strong{font-size:17px}.upload-drop>span{font-size:12px;color:#69819e}.upload-drop .upload-mini{color:#7a8fa7}.upload-icon{font-size:30px;color:#315fd3;line-height:1}
+.upload-options{background:#f7f9fd;border:1px solid #e0e9f3;border-radius:10px;padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.upload-options label{font-size:12px;color:#47617f;display:flex;flex-direction:column;gap:5px;font-weight:550}
+.upload-options select,.upload-options input[type=date]{min-width:0;width:100%;background:white;border:1px solid #cfdaea;border-radius:6px;padding:8px;color:#243b5a;font:inherit}
+.upload-options .upload-toggle{flex-direction:row;align-items:center;gap:7px}.upload-options input[type=checkbox]{accent-color:#315fd3}
+.upload-options button{align-self:end;min-height:36px}.upload-options button:disabled{opacity:.55;cursor:not-allowed}
+.upload-message{margin-top:13px;background:#f0f4fa;color:#516681;border:1px solid #dce5f0;border-radius:7px;padding:10px 12px;font-size:12px}
+.upload-message.is-error{background:#fff4f4;border-color:#f2c3c9;color:#a53848}
+.upload-message.is-success{background:#f0faf4;border-color:#bfe6cb;color:#206d48}
+#uploadedFiles{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.uploaded-file{font-size:11px;color:#426080;background:#f0f5fc;border-radius:4px;padding:5px 8px}
+.dynamic-results{padding-top:18px;scroll-margin-top:24px}
+.dynamic-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.dynamic-stat{border:1px solid #e0e7f0;background:#fafcff;border-radius:8px;padding:12px 13px}
+.dynamic-stat span{font-size:11px;color:#637992;display:block}.dynamic-stat b{font-size:24px;color:#213e64;display:block;margin-top:5px}
+.dynamic-notice{font-size:12px;line-height:1.7;background:#fff9ea;border-left:3px solid #dbac51;padding:11px 14px;color:#7e551f;margin-bottom:14px}
+.dynamic-columns{display:grid;grid-template-columns:1fr 1.3fr;gap:12px}
+.dynamic-panel{border:1px solid #e1e8f1;border-radius:9px;background:#fff;padding:13px;min-width:0}
+.dynamic-panel h3,.dynamic-candidates h3{margin:0 0 10px;font-size:15px;color:#243c58}
+.dynamic-check-line{padding:7px 2px;border-bottom:1px solid #edf1f6;font-size:12px;color:#4c6381;display:flex;justify-content:space-between;gap:8px}
+.dynamic-check-line b{white-space:nowrap;font-size:11px;color:#b06c24}.dynamic-check-line b.ok{color:#198358}
+.issue-scroll{max-height:225px;overflow:auto}
+.dynamic-table{border-collapse:collapse;width:100%;font-size:12px}
+.dynamic-table th{position:sticky;top:0;background:#f2f6fb;color:#52657e;padding:10px;border-bottom:1px solid #dfe7ef;white-space:nowrap;text-align:left}
+.dynamic-table td{padding:9px 10px;color:#334963;border-bottom:1px solid #e9eef5;vertical-align:middle}
+.dynamic-table td.reason{min-width:220px;white-space:normal}
+.dynamic-candidates{margin-top:16px;border:1px solid #e0e8f2;border-radius:9px;padding:16px 14px}
+.candidate-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}.candidate-heading p{color:#72849b;font-size:12px;margin:4px 0 10px}
+.candidate-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f7f9fd;padding:12px;border-radius:7px;margin:5px 0 10px}
+.candidate-filters label{display:flex;gap:7px;align-items:center;color:#536986;font-size:12px}
+.candidate-filters select,.candidate-filters input{font:inherit;font-size:12px;color:#2a4568;background:white;border:1px solid #d5dfeb;border-radius:5px;padding:6px}
+.candidate-filters #candidateCount{font-size:12px;color:#536986;margin-left:auto}
+.candidate-table{min-width:1130px}
+.candidate-table td strong{display:block;color:#243950}.candidate-table td small{color:#7890a7}
+.candidate-table td .priority-chip{display:inline-block;white-space:nowrap;border-radius:4px;padding:4px 7px;font-size:11px}
+.priority-chip.priority{color:#ae3344;background:#fbe9ec}.priority-chip.watch{color:#936113;background:#fff2dc}.priority-chip.low{color:#4268af;background:#eaf0ff}.priority-chip.sample{color:#61758b;background:#edf1f5}
+.candidate-table select{max-width:125px;padding:6px;border:1px solid #d5dfea;border-radius:5px;background:#fff;color:#334d66}
+.dynamic-caution{font-size:12px;color:#77613e;background:#fffaf0;margin-top:10px;padding:10px;border-radius:6px}
+#review{scroll-margin-top:16px}
+@media(max-width:900px){.upload-grid,.dynamic-columns{grid-template-columns:1fr}.dynamic-stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.upload-section{padding:16px}.upload-options{grid-template-columns:1fr}.dynamic-stats{grid-template-columns:repeat(2,1fr)}.stage-tag{display:none}}
+
 </style>
 </head>
 <body>
@@ -552,56 +635,43 @@ html { scroll-behavior: smooth; }
   
 
 <nav class="sop-nav" aria-label="页面导航">
-  <a href="#sop">SOP执行规范</a><a href="#gate">数据门禁</a><a href="#rules">下架判定规则</a><a href="#review">人工审核 / 备份</a><a href="#historical">2026 Q2 历史基线</a><a href="#sec-头像框">商品明细</a>
+  <a href="#dynamic">上传最新数据</a><a href="#dynamic-results">动态下架候选</a><a href="#review">历史商品复核</a><a href="#sec-头像框">历史SKU明细</a><a href="#sop">下架SOP</a><a href="#gate">数据门禁</a><a href="#rules">判断规则</a>
 </nav>
 <div class="notice-legacy"><b>数据使用边界：</b>本页保留原报告 442 个 SKU 的总体统计，但仅展示 <b>196 条 SKU 明细</b>（头像框 50 / 派对背景 50 / 资料卡 50 / 座驾 3 / 聊天气泡 43），靓号 47 个 SKU 不展示明细。历史报表将 POPPO 与 VONE 合并汇总，缺少逐商品上架时间、在售状态、逐日销量和来源文件审计信息。<b>本版本不能产生“可直接执行下架”的自动结论。</b></div>
-<section class="sop-block" id="sop">
-  <h2 class="sop-title">01 / 商城动态下架 SOP</h2>
-  <p class="sop-sub">目标：建立可重复执行、可追溯、误判成本受控的商品淘汰流程。建议每月完成一次完整复盘，每周检查观察名单；分析采用最近滚动90天，近30天用于捕捉变化。旧版4—6月为历史快照，不套用为当期结果。</p>
-  <div class="sop-steps">
-    <div class="sop-step"><span class="num">STEP 01</span><b>定义分析批次</b><p>确认平台、时间窗、统计口径和源文件清单。</p></div>
-    <div class="sop-step"><span class="num">STEP 02</span><b>数据质量门禁</b><p>重复、漏期、支付渠道及来源覆盖验证。</p></div>
-    <div class="sop-step"><span class="num">STEP 03</span><b>有效候选池</b><p>剔除暂不可评估商品；按平台与品类分层。</p></div>
-    <div class="sop-step"><span class="num">STEP 04</span><b>风险识别</b><p>数量极低、双渠道低贡献、销量趋势。</p></div>
-    <div class="sop-step"><span class="num">STEP 05</span><b>人工核查</b><p>确认上下架、活动、上架时长及替代商品。</p></div>
-    <div class="sop-step"><span class="num">STEP 06</span><b>执行与追踪</b><p>回写审核结果、操作凭据、下一批次复查。</p></div>
-  </div>
-  <div class="sop-table-wrap"><table class="sop-table"><thead><tr><th style="width:14%">阶段 / 负责人</th><th style="width:26%">必须输入</th><th style="width:32%">操作要求</th><th style="width:28%">输出 / 放行条件</th></tr></thead><tbody>
-    <tr><td><strong>01 数据批次</strong><div>产品 / 运营</div></td><td>平台、开始/截止日期、导出粒度、源文件清单</td><td>POPPO 与 VONE 分平台计算；仅在有统一商品ID和定义明确时生成跨平台参考汇总。优先订单明细，若使用按日汇总则必须有明确汇总键。</td><td>唯一批次ID；完整的时间窗口及来源清单。</td></tr>
-    <tr><td><strong>02 数据校验</strong><div>产品 / 数据方</div></td><td>文件/日期覆盖清单，交易主键或汇总维度，字段定义，后台对账数</td><td>检查漏日/漏页、重复、冲突记录、币种字段、空ID；“某天没有订单”不得仅凭销量0推断漏数据。</td><td>校验通过方可生成正式建议；异常时仅保留草稿，记录差异与修复动作。</td></tr>
-    <tr><td><strong>03 入池判断</strong><div>运营</div></td><td>SKU在售状态、上线时间、售卖天数、限时/节日/定制属性</td><td>已下架、尚未开卖、限时/节日/权益专属及靓号进入特殊池；上架不满30天不评分；30—89天只观察；满90天才可进入建议下架候选。</td><td>有效商品池 / 特殊池 / 暂不评估池；每个排除项有原因。</td></tr>
-    <tr><td><strong>04 指标计算</strong><div>系统 / 产品</div></td><td>90天销量、近30天销量、月度销量、金币与荣誉券支付销量/收入</td><td>销量单位为件；金币和荣誉券分母分别取同平台同类目对应渠道收入，不跨币种相加、不以币值推断支付件数。</td><td>初筛风险提示：数量、贡献、趋势三组信号；不是自动下架指令。</td></tr>
-    <tr><td><strong>05 人工审核</strong><div>运营 / 产品</div></td><td>风险商品明细、上架周期、活动记录、视觉/价格策略、相似商品</td><td>记录“保留、观察、拟下架、已执行下架”，填写原因。拟下架须审核实际在售、渠道表现和影响；确认后走现有后台操作流程。</td><td>有审核人、时间、结论及理由的处理清单。</td></tr>
-    <tr><td><strong>06 执行追踪</strong><div>运营</div></td><td>后台处理凭据、实际执行时间、商品ID</td><td>系统不自动下架。执行后记录工单/操作依据；观察商品下月复盘；保留复议记录，避免重复分析。</td><td>正式下架记录、保留/观察清单、下期复查时间。</td></tr>
-  </tbody></table></div>
-</section>
-<div class="audit-grid" id="gate">
-  <section class="sop-block check-gate"><h3>02 / 本期数据质量门禁（人工确认清单）</h3>
-    <p class="sop-small">以下仅为人工操作清单，勾选不代表系统自动查验。本版无原始数据，不能把历史快照标记为已验证。</p>
-    <div class="gate-list" id="gateChecks">
-      <label class="gate-item"><input type="checkbox" data-gate="source">已列出每个平台、起止日期、原始文件及对应导出任务</label>
-      <label class="gate-item"><input type="checkbox" data-gate="coverage">已与导出范围/对账数据核实日期、页码、数量覆盖情况</label>
-      <label class="gate-item"><input type="checkbox" data-gate="duplicate">已按订单行唯一键排重；汇总数据不因数值相同而误删</label>
-      <label class="gate-item"><input type="checkbox" data-gate="dimensions">已核对 SKU ID、平台、品类、日期与支付渠道字段</label>
-      <label class="gate-item"><input type="checkbox" data-gate="currency">金币/荣誉券独立统计，且区分支付件数和消耗额度</label>
-      <label class="gate-item"><input type="checkbox" data-gate="listing">已取得在售状态、售卖天数、活动/季节属性</label>
-      <label class="gate-item"><input type="checkbox" data-gate="reconcile">已完成分平台汇总、分品类汇总与后台总量对账</label>
+
+<section class="sop-block upload-section" id="dynamic">
+  <div class="upload-heading"><div><span class="eyebrow">CURRENT ANALYSIS · 数据驱动</span><h2 class="sop-title">商城动态下架分析</h2><p class="sop-sub">上传最近90天商城Excel / CSV，自动拆解商品、识别异常与生成待复核SKU。仅在数据校验及商品在售条件得到确认后，才可确定最终下架名单。</p></div><span class="stage-tag">动态分析 V1.2</span></div>
+  <div class="upload-grid">
+    <div class="upload-drop" id="uploadDrop" tabindex="0" role="button" aria-label="上传商城数据文件">
+      <div class="upload-icon">⇧</div><strong>点击选择文件，或拖拽到这里</strong><span>支持批量 .xlsx / .xls / .csv · 支持原始商城订单统计字段</span><span class="upload-mini">所有计算在本地浏览器进行，文件不会上传至GitHub</span>
+      <input id="uploadDataFiles" type="file" multiple accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
     </div>
-    <p class="sop-small" style="margin:12px 0 4px"><span class="gate-status" id="gateStatus">未完成 · 0/7</span> <span style="color:#8396ad">（勾选状态仅存本浏览器）</span></p>
-    <div class="sop-note">正式结论的放行逻辑：必须通过机器校验 + 人工确认 + 商品有效期校验。<b>即使这里勾选7/7，当前历史文件仍不满足机器校验条件。</b></div>
-  </section>
-  <section class="sop-block" id="rules"><h2 class="sop-title">03 / 下架风险与例外规则</h2>
-    <div class="sop-table-wrap"><table class="sop-table" style="min-width:490px"><thead><tr><th>标签</th><th>新SOP建议口径</th><th>处理方式</th></tr></thead><tbody>
-      <tr><td><strong>重点复核</strong></td><td>在售满90天、已完成校验，近90天累计销量 ≤ 1 件</td><td>进入下架候选的优先核查池，<b>不直接下架</b></td></tr>
-      <tr><td><strong>观察</strong></td><td>近90天累计销量 2—5 件；或金币、荣誉券贡献均低于对应品类参考阈值且近30天销量≤5件；或连续两个完整30天窗口环比下降≥20%且最近30天销量≤5件</td><td>核查近期变化、上架时长与定价，次月复盘</td></tr>
-      <tr><td><strong>仅金币偏低</strong></td><td>仅金币贡献低，荣誉券贡献或支付销量正常</td><td>不能当作下架证据，先分析支付结构</td></tr>
-      <tr><td><strong>暂不评估</strong></td><td>上架不足30天 / 非正常售卖 / 原始数据不完整 / 特殊活动或靓号</td><td>移至相应名单，排除常规阈值筛选</td></tr>
-    </tbody></table></div>
-    <p class="sop-small"><b>原阈值保留作为“金币贡献预警参考”：</b>头像框 &lt;0.2%、派对背景 &lt;0.2%、资料卡 &lt;0.5%、座驾 &lt;0.5%、聊天气泡 &lt;0.3%。它们不再直接触发“建议下架”；荣誉券贡献须独立计算，并结合价格、上架时长和销量趋势复核。</p>
-    <p class="sop-small"><b>计算口径：</b>金币贡献 = SKU金币销售额 ÷ 同平台同品类金币销售总额；荣誉券贡献 = SKU荣誉券消耗额 ÷ 同平台同品类荣誉券消耗总额。分母为0则记为“不适用”，绝不当成0%。近30天与近90天按相同口径取样。支付方式占比应按支付件数计算，不能用不同币种金额直接相加。</p>
-    <div class="sop-note">本期只确认规则和人工审核流程。新阈值的自动分级、双渠道贡献比较、连续下滑判定须在取得完整、校验通过的原始数据后实现，不能用旧HTML展示的196行代替全量442行计算。</div>
-  </section>
-</div>
+    <div class="upload-options">
+      <label>本批次所属平台 <select id="batchPlatform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label>
+      <label>分析开始日期 <input id="batchStart" type="date" /></label>
+      <label>分析截止日期 <input id="batchEnd" type="date" /></label>
+      <label class="upload-toggle"><input id="excludeToday" type="checkbox" checked /> 排除未结束的当天数据</label>
+      <button class="btn btn-primary" id="runDataAnalysis" type="button" disabled>重新分析所选数据</button>
+    </div>
+  </div>
+  <div id="uploadMessage" class="upload-message" role="status">尚未导入数据。原版2026年4—6月静态表格保留在下方，可继续人工复核。</div>
+  <div id="uploadedFiles"></div>
+  <div class="dynamic-results" id="dynamic-results" hidden>
+    <div class="dynamic-stats" id="dynamicStats"></div>
+    <div class="dynamic-notice" id="dynamicNotice"></div>
+    <div class="dynamic-columns">
+      <div class="dynamic-panel"><h3>数据质量检查</h3><div id="dynamicChecks"></div></div>
+      <div class="dynamic-panel"><h3>异常样本（含原始行号）</h3><div class="issue-scroll"><table class="dynamic-table"><thead><tr><th>类型</th><th>来源</th><th>问题描述</th></tr></thead><tbody id="dynamicIssues"></tbody></table></div></div>
+    </div>
+    <div class="dynamic-candidates">
+      <div class="candidate-heading"><div><h3>动态待下架候选商品</h3><p id="dynamicCandidateMeta"></p></div><button class="btn btn-primary" id="exportCandidates" type="button">导出商品审核CSV</button></div>
+      <div class="candidate-filters"><label>品类 <select id="candidateType"><option value="">全部品类</option></select></label><label>风险 <select id="candidateRisk"><option value="">全部</option><option value="priority">优先复核</option><option value="watch">持续观察</option><option value="low">低贡献观察</option><option value="sample">样本观察</option></select></label><label>搜索 <input id="candidateSearch" type="search" placeholder="商品名称 / 商品ID" /></label><span id="candidateCount"></span></div>
+      <div class="table-wrap"><table class="dynamic-table candidate-table"><thead><tr><th>处理优先级</th><th>商品 / ID</th><th>品类</th><th>区间销量</th><th>近30天</th><th>金币贡献</th><th>荣誉券贡献</th><th>入选原因 / 数据限制</th><th>审核结果</th></tr></thead><tbody id="candidateRows"></tbody></table></div>
+      <div class="dynamic-caution">⚠️ 数据中未出现的零销量SKU无法从订单导出中发现；缺少在售商品清单/上架日期时，系统只输出复核候选，不自动执行下架。</div>
+    </div>
+  </div>
+</section>
+
 <section class="sop-block" id="review"><h2 class="sop-title">04 / 历史商品人工复核台</h2>
   <p class="sop-sub">保留原来的商品明细与复核勾选，新增“历史风险提示、审核结论、备注”。审核结论由人工选择；本地记录不会自动同步 GitHub，也不会触发任何商品下架。<strong>“已执行下架”只是线下执行的登记，不代表本系统已调用商城后台。</strong></p>
   <div class="filter-controls"><label>品类 <select id="filterType"><option value="">全部品类</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>座驾</option><option>聊天气泡</option></select></label>
@@ -628,7 +698,7 @@ html { scroll-behavior: smooth; }
   </div>
 </div>
 
-  <section class="threshold-rules"><div class="tr-head">📋 原版金币低贡献预警阈值 · 仅保留作历史筛查参照</div><div class="tr-grid">
+<details class="reference-accordion"><summary>历史品类贡献预警阈值与商品分类统计（点击展开）</summary>  <section class="threshold-rules"><div class="tr-head">📋 原版金币低贡献预警阈值 · 仅保留作历史筛查参照</div><div class="tr-grid">
   <div class="tr-card">
     <div class="tr-type">头像框</div>
     <div class="tr-th">阈值：<b>&lt; 0.2%</b></div>
@@ -691,6 +761,7 @@ html { scroll-behavior: smooth; }
   </a>
 </div>
   
+</details>
 <section class="section" id="sec-头像框">
   <header class="section-head">
     <h2>头像框</h2>
@@ -5170,6 +5241,54 @@ html { scroll-behavior: smooth; }
     5月 21 个 / 6月 15 个）。
     历史报告未提供靓号明细。靓号具有稀缺性与非标准价格，不参与常规阈值淘汰；后续单独核查，不据此执行下架。
   </div>
+</div>
+
+<section class="sop-block" id="sop">
+  <h2 class="sop-title">01 / 商城动态下架 SOP</h2>
+  <p class="sop-sub">目标：建立可重复执行、可追溯、误判成本受控的商品淘汰流程。建议每月完成一次完整复盘，每周检查观察名单；分析采用最近滚动90天，近30天用于捕捉变化。旧版4—6月为历史快照，不套用为当期结果。</p>
+  <div class="sop-steps">
+    <div class="sop-step"><span class="num">STEP 01</span><b>定义分析批次</b><p>确认平台、时间窗、统计口径和源文件清单。</p></div>
+    <div class="sop-step"><span class="num">STEP 02</span><b>数据质量门禁</b><p>重复、漏期、支付渠道及来源覆盖验证。</p></div>
+    <div class="sop-step"><span class="num">STEP 03</span><b>有效候选池</b><p>剔除暂不可评估商品；按平台与品类分层。</p></div>
+    <div class="sop-step"><span class="num">STEP 04</span><b>风险识别</b><p>数量极低、双渠道低贡献、销量趋势。</p></div>
+    <div class="sop-step"><span class="num">STEP 05</span><b>人工核查</b><p>确认上下架、活动、上架时长及替代商品。</p></div>
+    <div class="sop-step"><span class="num">STEP 06</span><b>执行与追踪</b><p>回写审核结果、操作凭据、下一批次复查。</p></div>
+  </div>
+  <div class="sop-table-wrap"><table class="sop-table"><thead><tr><th style="width:14%">阶段 / 负责人</th><th style="width:26%">必须输入</th><th style="width:32%">操作要求</th><th style="width:28%">输出 / 放行条件</th></tr></thead><tbody>
+    <tr><td><strong>01 数据批次</strong><div>产品 / 运营</div></td><td>平台、开始/截止日期、导出粒度、源文件清单</td><td>POPPO 与 VONE 分平台计算；仅在有统一商品ID和定义明确时生成跨平台参考汇总。优先订单明细，若使用按日汇总则必须有明确汇总键。</td><td>唯一批次ID；完整的时间窗口及来源清单。</td></tr>
+    <tr><td><strong>02 数据校验</strong><div>产品 / 数据方</div></td><td>文件/日期覆盖清单，交易主键或汇总维度，字段定义，后台对账数</td><td>检查漏日/漏页、重复、冲突记录、币种字段、空ID；“某天没有订单”不得仅凭销量0推断漏数据。</td><td>校验通过方可生成正式建议；异常时仅保留草稿，记录差异与修复动作。</td></tr>
+    <tr><td><strong>03 入池判断</strong><div>运营</div></td><td>SKU在售状态、上线时间、售卖天数、限时/节日/定制属性</td><td>已下架、尚未开卖、限时/节日/权益专属及靓号进入特殊池；上架不满30天不评分；30—89天只观察；满90天才可进入建议下架候选。</td><td>有效商品池 / 特殊池 / 暂不评估池；每个排除项有原因。</td></tr>
+    <tr><td><strong>04 指标计算</strong><div>系统 / 产品</div></td><td>90天销量、近30天销量、月度销量、金币与荣誉券支付销量/收入</td><td>销量单位为件；金币和荣誉券分母分别取同平台同类目对应渠道收入，不跨币种相加、不以币值推断支付件数。</td><td>初筛风险提示：数量、贡献、趋势三组信号；不是自动下架指令。</td></tr>
+    <tr><td><strong>05 人工审核</strong><div>运营 / 产品</div></td><td>风险商品明细、上架周期、活动记录、视觉/价格策略、相似商品</td><td>记录“保留、观察、拟下架、已执行下架”，填写原因。拟下架须审核实际在售、渠道表现和影响；确认后走现有后台操作流程。</td><td>有审核人、时间、结论及理由的处理清单。</td></tr>
+    <tr><td><strong>06 执行追踪</strong><div>运营</div></td><td>后台处理凭据、实际执行时间、商品ID</td><td>系统不自动下架。执行后记录工单/操作依据；观察商品下月复盘；保留复议记录，避免重复分析。</td><td>正式下架记录、保留/观察清单、下期复查时间。</td></tr>
+  </tbody></table></div>
+</section>
+<div class="audit-grid" id="gate">
+  <section class="sop-block check-gate"><h3>02 / 本期数据质量门禁（人工确认清单）</h3>
+    <p class="sop-small">以下仅为人工操作清单，勾选不代表系统自动查验。本版无原始数据，不能把历史快照标记为已验证。</p>
+    <div class="gate-list" id="gateChecks">
+      <label class="gate-item"><input type="checkbox" data-gate="source">已列出每个平台、起止日期、原始文件及对应导出任务</label>
+      <label class="gate-item"><input type="checkbox" data-gate="coverage">已与导出范围/对账数据核实日期、页码、数量覆盖情况</label>
+      <label class="gate-item"><input type="checkbox" data-gate="duplicate">已按订单行唯一键排重；汇总数据不因数值相同而误删</label>
+      <label class="gate-item"><input type="checkbox" data-gate="dimensions">已核对 SKU ID、平台、品类、日期与支付渠道字段</label>
+      <label class="gate-item"><input type="checkbox" data-gate="currency">金币/荣誉券独立统计，且区分支付件数和消耗额度</label>
+      <label class="gate-item"><input type="checkbox" data-gate="listing">已取得在售状态、售卖天数、活动/季节属性</label>
+      <label class="gate-item"><input type="checkbox" data-gate="reconcile">已完成分平台汇总、分品类汇总与后台总量对账</label>
+    </div>
+    <p class="sop-small" style="margin:12px 0 4px"><span class="gate-status" id="gateStatus">未完成 · 0/7</span> <span style="color:#8396ad">（勾选状态仅存本浏览器）</span></p>
+    <div class="sop-note">正式结论的放行逻辑：必须通过机器校验 + 人工确认 + 商品有效期校验。<b>即使这里勾选7/7，当前历史文件仍不满足机器校验条件。</b></div>
+  </section>
+  <section class="sop-block" id="rules"><h2 class="sop-title">03 / 下架风险与例外规则</h2>
+    <div class="sop-table-wrap"><table class="sop-table" style="min-width:490px"><thead><tr><th>标签</th><th>新SOP建议口径</th><th>处理方式</th></tr></thead><tbody>
+      <tr><td><strong>重点复核</strong></td><td>在售满90天、已完成校验，近90天累计销量 ≤ 1 件</td><td>进入下架候选的优先核查池，<b>不直接下架</b></td></tr>
+      <tr><td><strong>观察</strong></td><td>近90天累计销量 2—5 件；或金币、荣誉券贡献均低于对应品类参考阈值且近30天销量≤5件；或连续两个完整30天窗口环比下降≥20%且最近30天销量≤5件</td><td>核查近期变化、上架时长与定价，次月复盘</td></tr>
+      <tr><td><strong>仅金币偏低</strong></td><td>仅金币贡献低，荣誉券贡献或支付销量正常</td><td>不能当作下架证据，先分析支付结构</td></tr>
+      <tr><td><strong>暂不评估</strong></td><td>上架不足30天 / 非正常售卖 / 原始数据不完整 / 特殊活动或靓号</td><td>移至相应名单，排除常规阈值筛选</td></tr>
+    </tbody></table></div>
+    <p class="sop-small"><b>原阈值保留作为“金币贡献预警参考”：</b>头像框 &lt;0.2%、派对背景 &lt;0.2%、资料卡 &lt;0.5%、座驾 &lt;0.5%、聊天气泡 &lt;0.3%。它们不再直接触发“建议下架”；荣誉券贡献须独立计算，并结合价格、上架时长和销量趋势复核。</p>
+    <p class="sop-small"><b>计算口径：</b>金币贡献 = SKU金币销售额 ÷ 同平台同品类金币销售总额；荣誉券贡献 = SKU荣誉券消耗额 ÷ 同平台同品类荣誉券消耗总额。分母为0则记为“不适用”，绝不当成0%。近30天与近90天按相同口径取样。支付方式占比应按支付件数计算，不能用不同币种金额直接相加。</p>
+    <div class="sop-note">本期只确认规则和人工审核流程。新阈值的自动分级、双渠道贡献比较、连续下滑判定须在取得完整、校验通过的原始数据后实现，不能用旧HTML展示的196行代替全量442行计算。</div>
+  </section>
 </div>
 
   <footer>
