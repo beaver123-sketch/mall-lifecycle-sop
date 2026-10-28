@@ -84,10 +84,22 @@ const readAll=()=>database('readonly',s=>s.getAll()),readOne=k=>database('readon
 const activeMonth=m=>months.get(monthKey(platform,year,m));
 async function refresh(){months=new Map((await readAll()).filter(x=>x.platform===platform&&x.ym.startsWith(year+'-')).map(x=>[x.key,x]));drawMonths();}
 function drawMonths(){
-$('v23Months').innerHTML=Array.from({length:12},(_,i)=>{const m=i+1,f=activeMonth(m)?.files||[],count=f.reduce((a,x)=>a+x.rows.length,0),bad=f.reduce((a,x)=>a+x.issues.filter(v=>v.fatal).length,0);
-return '<button type="button" class="v23-month '+(month===m?'selected ':'')+(f.length?'filled':'')+'" data-month="'+m+'"><b>'+String(m).padStart(2,'0')+'月</b><span>'+(f.length?f.length+'份 · '+format(count)+'行':'未上传')+'</span><small class="'+(bad?'v23-bad':'')+'">'+(bad?bad+'项异常':f.length?'已保存':'选择月份')+'</small></button>';}).join('');
-$('v23SelectedMonth').textContent=year+'年'+month+'月 · 订单数据';
-$('v2OrderFiles').innerHTML=(activeMonth(month)?.files||[]).map(f=>'<span class="v23-file-row">'+esc(f.name)+'（'+format(f.rows.length)+'行）<button data-remove-file="'+esc(f.name)+'" title="删除该文件">×</button></span>').join('');
+ $('v23Months').innerHTML=Array.from({length:12},(_,i)=>{
+  const m=i+1,f=activeMonth(m)?.files||[],count=f.reduce((a,x)=>a+x.rows.length,0),bad=f.reduce((a,x)=>a+x.issues.filter(v=>v.fatal).length,0);
+  return '<button type="button" class="v23-month '+(month===m?'selected ':'')+(f.length?'filled':'')+'" data-month="'+m+'"><b>'+String(m).padStart(2,'0')+'月</b><span>'+(f.length?f.length+'份 · '+format(count)+'行':'未上传')+'</span><small class="'+(bad?'v23-bad':'')+'">'+(bad?bad+'项需核对':f.length?'已保存':'选择月份')+'</small></button>';
+ }).join('');
+ $('v23SelectedMonth').textContent=year+'年'+month+'月 · 已保存订单';
+ const files=activeMonth(month)?.files||[];
+ $('v2OrderFiles').innerHTML=files.map(f=>'<span class="v23-file-row">'+esc(f.name)+'（'+format(f.rows.length)+'行）<button data-remove-file="'+esc(f.name)+'" title="删除该文件">×</button></span>').join('');
+ $('v23ParseTotals').textContent=files.length+'份 · 已解析'+format(files.reduce((n,f)=>n+f.rows.length,0))+'行';
+ $('v23ParseDetails').innerHTML=files.length?files.map(f=>{
+  const fatal=f.issues.filter(v=>v.fatal),warnings=f.issues.filter(v=>!v.fatal),sample=fatal.slice(0,3);
+  return '<details class="v23-import-file" '+(f.rows.length===0?'open':'')+'><summary><strong>'+esc(f.name)+'</strong><span class="'+(fatal.length?'v23-import-bad':'v23-import-good')+'">'+format(f.rows.length)+'条有效 · '+fatal.length+'项错误'+(warnings.length?' · '+warnings.length+'条提示':'')+'</span></summary>'+
+  '<div class="v23-import-info">'+(f.scanned!=null?'检查'+format(f.scanned)+'行，排除'+format(f.skipped)+'行。':'旧版已存记录，建议点击“重新解析”。')+
+  (sample.length?'<ul>'+sample.map(e=>'<li>'+esc(e.source)+' 第'+esc(e.line)+'行：'+esc(e.reason)+'</li>').join('')+'</ul>':'')+
+  (fatal.length>3?'<small>其余问题可在页面底部「规则与说明 → 数据质量问题」中查看。</small>':'')+
+  '</div></details>';
+ }).join(''):'<span class="v2-muted">这个月份还没有上传文件</span>';
 }
 function launchKey(p,q){return p+'|'+q;}
 function launchSet(p,q){const v=launches[launchKey(p,q)]||{};return Object.fromEntries(TYPES.map(t=>[t,new Set(v[t]||[])]));}
@@ -97,12 +109,69 @@ function storeLaunches(){const q=$('v2Quarter').value;const v={};launchFields().
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),900);}
 function toCsv(name,header,rows){const quote=x=>{let s=String(x??'');if(/^[=+@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};download(new Blob(['\ufeff'+[header,...rows].map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),name);}
 let uploading=false;
-async function upload(files){files=files.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!files.length||uploading)return;uploading=true;$('v23Upload').disabled=true;const ym=year+'-'+String(month).padStart(2,'0');
-try{msg('正在解析并保存 '+ym+' 的'+files.length+'份数据…');const k=monthKey(platform,year,month),old=await readOne(k),map=new Map((old?.files||[]).map(f=>[f.name.toLowerCase(),f]));
-for(const file of files){const parsed=await parseFile(file,platform,ym);map.set(file.name.toLowerCase(),parsed);}
-await writeOne({key:k,platform,ym,files:[...map.values()],savedAt:new Date().toISOString()});
-await refresh();$('v2Quarter').value=year+'-Q'+Math.ceil(month/3);showLaunches();analyze();msg(ym+' 已保存'+files.length+'个文件。重新上传同名文件会替换旧文件。','good');
-}catch(e){msg('文件上传或保存失败：'+e.message,'danger');}finally{uploading=false;$('v23Upload').disabled=false;}}
+async function upload(files){
+ files=files.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!files.length||uploading)return;
+ uploading=true;$('v23Upload').disabled=true;
+ try{
+  msg('正在按实际订单日期识别、分月保存 '+files.length+'份文件…');
+  const parsed=[];for(const f of files)parsed.push(await parseFile(f,platform));
+  const updates=new Map(),invalid=[];
+  for(const item of parsed){
+   const grouping=new Map();
+   for(const row of item.rows){const ym=row.date.slice(0,7);if(!grouping.has(ym))grouping.set(ym,[]);grouping.get(ym).push(row);}
+   if(!grouping.size){grouping.set(year+'-'+String(month).padStart(2,'0'),[]);invalid.push(item.name);}
+   for(const [ym,rows] of grouping){
+    if(!updates.has(ym))updates.set(ym,[]);
+    updates.get(ym).push({...item,rows});
+   }
+  }
+  for(const [ym,additions] of updates){
+   const y=+ym.slice(0,4),m=+ym.slice(5);
+   const k=monthKey(platform,y,m),old=await readOne(k),mapping=new Map((old?.files||[]).map(f=>[f.name.toLowerCase(),f]));
+   for(const f of additions)mapping.set(f.name.toLowerCase(),f);
+   await writeOne({key:k,platform,ym,files:[...mapping.values()],savedAt:new Date().toISOString()});
+  }
+  const allMonths=[...updates.keys()].sort();
+  if(allMonths.length){year=+allMonths[0].slice(0,4);month=+allMonths[0].slice(5);$('v23Year').value=year;updateQuarter();}
+  await refresh();$('v2Quarter').value=year+'-Q'+Math.ceil(month/3);showLaunches();analyze();
+  const good=parsed.reduce((n,f)=>n+f.rows.length,0),bad=parsed.reduce((n,f)=>n+f.issues.filter(e=>e.fatal).length,0);
+  msg('已导入 '+parsed.length+'份文件，解析 '+format(good)+'条有效订单，自动归入 '+allMonths.join('、')+'。'+
+   (invalid.length?'以下文件未解析到有效行：'+invalid.join('、')+'。请展开文件详情查看原因。':'')+
+   (bad?'发现'+bad+'项字段问题，点击“所选月份文件解析情况”查看。':''),good?'good':'danger');
+ }catch(e){msg('导入失败：'+e.message,'danger');}
+ finally{uploading=false;$('v23Upload').disabled=false;}
+}
+async function reparseStoredFiles(){
+ if(uploading)return;
+ uploading=true;$('v23Reparse').disabled=true;
+ try{
+  const all=await readAll(),backed=all.filter(x=>x.platform===platform&&x.ym.startsWith(year+'-'));
+  const files=new Map(),missing=[];
+  for(const group of backed)for(const f of group.files){
+   if(f.blob&&typeof f.blob.arrayBuffer==='function')files.set(f.name.toLowerCase(),f.blob);
+   else if(!files.has(f.name.toLowerCase()))missing.push(f.name);
+  }
+  if(!files.size){msg('没有可重新解析的原始文件。之前通过JSON恢复的数据不含原始Excel，请重新上传对应文件。','danger');return;}
+  const p=[...files.values()];const parsed=[];
+  for(const f of p)parsed.push(await parseFile(f,platform));
+  const updates=new Map();
+  for(const f of parsed){
+   for(const row of f.rows){const ym=row.date.slice(0,7),k=ym+'|'+f.name.toLowerCase();if(!updates.has(k))updates.set(k,{ym,file:{...f,rows:[]}});updates.get(k).file.rows.push(row);}
+   if(!f.rows.length){const ym=backed.find(b=>b.files.some(z=>z.name.toLowerCase()===f.name.toLowerCase()))?.ym||(year+'-'+String(month).padStart(2,'0'));updates.set(ym+'|'+f.name.toLowerCase(),{ym,file:f});}
+  }
+  // Remove only backed-up copies of files that were successfully re-read; preserve other monthly records.
+  const names=new Set(parsed.map(x=>x.name.toLowerCase()));
+  for(const old of backed){
+   const kept=old.files.filter(x=>!names.has(x.name.toLowerCase()));
+   if(kept.length)await writeOne({...old,files:kept});else await deleteOne(old.key);
+  }
+  const byMonth=new Map();for(const z of updates.values()){if(!byMonth.has(z.ym))byMonth.set(z.ym,[]);byMonth.get(z.ym).push(z.file);}
+  for(const [ym,ff] of byMonth){const k=monthKey(platform,+ym.slice(0,4),+ym.slice(5)),old=await readOne(k);await writeOne({key:k,platform,ym,files:[...(old?.files||[]),...ff],savedAt:new Date().toISOString()});}
+  await refresh();analyze();
+  msg('已重新解析 '+p.length+'份已保存文件，按实际日期重新归档。'+(missing.length?'有'+missing.length+'个JSON恢复文件缺少原始Excel，不支持重新解析。':''),'good');
+ }catch(e){msg('重新解析失败：'+e.message,'danger');}
+ finally{uploading=false;$('v23Reparse').disabled=false;}
+}
 async function removeFile(name){const k=monthKey(platform,year,month),rec=await readOne(k);if(!rec)return;rec.files=rec.files.filter(f=>f.name!==name);if(rec.files.length)await writeOne(rec);else await deleteOne(k);await refresh();analyze();msg('已删除 '+name,'good');}
 async function clearMonth(){if(!activeMonth(month))return;if(!confirm('确定清空'+year+'年'+month+'月的订单吗？'))return;await deleteOne(monthKey(platform,year,month));await refresh();analyze();}
 function downloadMonth(){const data=(activeMonth(month)?.files||[]).flatMap(f=>f.rows);if(!data.length){msg('当前月份没有可导出的数据','danger');return;}
