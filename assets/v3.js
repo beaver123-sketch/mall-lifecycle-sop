@@ -208,14 +208,14 @@ function undoDelisted(key){
 }
 function analyze(){const q=$('v2Quarter').value,r=qrange(q);if(!r)return;const errors=[],blocks=[],warnings=[],records=[],sources=[];
 for(const m of r.months){const slot=activeMonth(m);if(!slot?.files?.length){blocks.push(m+'月未上传');continue;}for(const f of slot.files){sources.push(f.name);records.push(...f.rows);errors.push(...f.issues);}}
-const today=new Date().toISOString().slice(0,10);if(r.end>=today)blocks.push('当前季度尚未结束，不能输出正式下架名单');if(errors.some(x=>x.fatal))blocks.push('订单文件存在关键字段异常');if(!records.length)blocks.push('本季度无可用订单');
+const today=new Date().toISOString().slice(0,10);if(r.end>=today)blocks.push('所选季度尚未结束（截止'+r.end+'），目前只能查看阶段性分析，不能生成最终下架名单');if(errors.some(x=>x.fatal))blocks.push('订单文件存在关键字段异常');if(!records.length)blocks.push(sources.length?'已保存'+sources.length+'份文件，但0条订单成功解析；请展开上方“所选月份文件解析情况”，查看具体原因':'本季度尚未保存可用订单文件');
 const seen=new Map(),distinct=[];for(const x of records){const k=[x.date,x.cat,x.id,x.term].join('|');if(!seen.has(k)){seen.set(k,x);distinct.push(x);continue;}
-const original=seen.get(k),same=['qty','gq','hq','ga','ha'].every(p=>original[p]===x[p]);errors.push(problem(same?'疑似重复':'同维度统计冲突',x.source,x.line,'与'+original.source+'第'+original.line+'行统计维度一致',!same));if(!same)blocks.push('订单统计冲突');}
-const datadays=new Set(distinct.map(x=>x.date));if(datadays.size<r.days)warnings.push('有'+(r.days-datadays.size)+'个日期没有成交记录，可能无订单或漏导');
+const original=seen.get(k),same=['qty','gq','hq','ga','ha'].every(p=>original[p]===x[p]);errors.push(problem(same?'疑似重复':'同维度统计冲突',x.source,x.line,'与'+original.source+'第'+original.line+'行统计维度一致',!same));if(!same)blocks.push('订单统计冲突：'+x.source+' 第'+x.line+'行');}
+const datadays=new Set(distinct.map(x=>x.date));if(records.length&&datadays.size<r.days)warnings.push('有'+(r.days-datadays.size)+'个日期未在成功解析的订单中出现；可能无成交，也可能漏导');
 const current=launchSet(platform,q),prior=launchSet(platform,prevQ(q));if(TYPES.every(t=>current[t].size===0))warnings.push('尚未填写本季度上新ID，可能误选新品');
 const group=new Map();for(const x of distinct){if(!TYPES.includes(x.cat))continue;const k=downKey(platform,x.cat,x.id);if(!group.has(k))group.set(k,{id:x.id,type:x.cat,name:x.name,qty:0,dates:new Set(),last:0,prev:0});const g=group.get(k);g.qty+=x.qty;if(x.qty>0)g.dates.add(x.date);
 if(x.date>=plus(r.end,-29))g.last+=x.qty;else if(x.date>=plus(r.end,-89))g.prev+=x.qty;}
-if(!group.size)blocks.push('没有可识别的五类商品');
+if(!group.size&&records.length)blocks.push('订单中没有五类可分析商品，请核对商品类型列');
 const eligible=[],excluded=[];for(const g of group.values()){const p=current[g.type].has(g.id)?'本季度上新':prior[g.type].has(g.id)?'上季度上新':'';const down=delisted[downKey(platform,g.type,g.id)],reason=down?'已下架':p;
 const item={...g,activeDays:g.dates.size,activeRate:g.dates.size/r.days,saleDays:r.days,rankQty:0,rankActive:0,reason,grade:'C'};(reason?excluded:eligible).push(item);}
 const execQuarter=r.n===4?(r.y+1)+'-Q1':r.y+'-Q'+(r.n+1),execRange=qrange(execQuarter);
