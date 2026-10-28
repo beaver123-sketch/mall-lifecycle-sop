@@ -87,7 +87,7 @@ async function refresh(){months=new Map((await readAll()).filter(x=>x.platform==
 function drawMonths(){
  $('v23Months').innerHTML=Array.from({length:12},(_,i)=>{
   const m=i+1,f=activeMonth(m)?.files||[],count=f.reduce((a,x)=>a+x.rows.length,0),bad=f.reduce((a,x)=>a+x.issues.filter(v=>v.fatal).length,0);
-  return '<button type="button" class="v23-month '+(month===m?'selected ':'')+(f.length?'filled':'')+'" data-month="'+m+'"><b>'+String(m).padStart(2,'0')+'月</b><span>'+(f.length?f.length+'份 · '+format(count)+'行':'未上传')+'</span><small class="'+(bad?'v23-bad':'')+'">'+(bad?bad+'项需核对':f.length?'已保存':'选择月份')+'</small></button>';
+  return '<button type="button" class="v23-month '+(month===m?'selected ':'')+(f.length?'filled':'')+'" data-month="'+m+'"><b>'+String(m).padStart(2,'0')+'月</b><span>'+(f.length?f.length+'份 · '+format(count)+'行':'未上传')+'</span><small class="'+(bad?'v23-bad':'')+'">'+(bad?bad+'项需核对':f.length?(count?'已保存':'待修复'):'选择月份')+'</small></button>';
  }).join('');
  $('v23SelectedMonth').textContent=year+'年'+month+'月 · 已保存订单';
  const files=activeMonth(month)?.files||[];
@@ -170,7 +170,7 @@ async function reparseStoredFiles(onlyName){
   }
   const byMonth=new Map();for(const z of updates.values()){if(!byMonth.has(z.ym))byMonth.set(z.ym,[]);byMonth.get(z.ym).push(z.file);}
   for(const [ym,ff] of byMonth){const k=monthKey(platform,+ym.slice(0,4),+ym.slice(5)),old=await readOne(k);await writeOne({key:k,platform,ym,files:[...(old?.files||[]),...ff],savedAt:new Date().toISOString()});}
-  await refresh();analyze();
+  const routeMonths=[...byMonth.keys()].sort();const currentKey=year+'-'+String(month).padStart(2,'0');if(routeMonths.length&&!routeMonths.includes(currentKey)){year=+routeMonths[0].slice(0,4);month=+routeMonths[0].slice(5);$('v23Year').value=year;updateQuarter();$('v2Quarter').value=year+'-Q'+Math.ceil(month/3);}await refresh();showLaunches();analyze();
   msg('已重新解析 '+p.length+'份已保存文件，按实际日期重新归档。'+(missing.length?'有'+missing.length+'个JSON恢复文件缺少原始Excel，不支持重新解析。':''),'good');
  }catch(e){msg('重新解析失败：'+e.message,'danger');}
  finally{uploading=false;$('v23Reparse').disabled=false;}
@@ -243,7 +243,7 @@ const formal=blocks.length===0;results={q,r,formal,blocks:[...new Set(blocks)],w
 drawResults();if(formal)storeHistory(true);}
 function drawResults(){if(!results)return;const x=results;$('v2Results').hidden=false;
 $('v2Summary').innerHTML=[['统计季度',x.q],['参与评估SKU',x.eligible],['双重低效SKU',TYPES.reduce((n,t)=>n+x.stats[t].lowBoth,0)],['建议下架',x.formal?x.suggested.length:'待核验'],['季度额度剩余',Math.max(0,28-TYPES.reduce((a,t)=>a+x.stats[t].executed,0))]].map(([t,v])=>'<div class="v2-metric"><small>'+esc(t)+'</small><strong>'+esc(v)+'</strong></div>').join('');
-$('v2Quality').className='v2-alert '+(x.formal?'good':'danger');$('v2Quality').innerHTML='<b>'+(x.formal?'已完成本季度分析':'数据暂不满足正式下架条件')+'</b><div>'+esc([...x.blocks,...x.warnings].join('；')||'数据结构未发现关键异常，仍建议确认后台导出覆盖完整。')+'</div><small>'+x.sourceCount+'份文件 · '+x.dayCount+'/'+x.r.days+'个日期有成交记录</small>';
+$('v2Quality').className='v2-alert '+(x.formal?'good':'danger');$('v2Quality').innerHTML='<b>'+(x.formal?'已完成本季度分析':'数据暂不满足正式下架条件')+'</b><div>'+esc([...x.blocks,...x.warnings].join('；')||'数据结构未发现关键异常，仍建议确认后台导出覆盖完整。')+'</div><small>'+x.sourceCount+'份文件 · '+(x.dayCount?x.dayCount+'/'+x.r.days+'个日期有成交记录':'尚未成功解析订单日期')+'</small>';
 $('v2Overview').innerHTML=TYPES.map(t=>{const v=x.stats[t];return '<tr><td><b>'+t+'</b></td><td>'+v.plan+'</td><td>'+v.registered+'</td><td>'+v.quota+(v.executed?'（已执行'+v.executed+'）':'')+'</td><td>'+v.eligible+'</td><td>'+v.lowBoth+'</td><td><b>'+(x.formal?v.suggested:'待核验')+'</b></td><td>'+(x.formal?v.plan-v.suggested:'—')+'</td></tr>';}).join('')+'<tr><td><b>合计</b></td><td>51</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].registered,0)+'</td><td>28</td><td>'+x.eligible+'</td><td>'+TYPES.reduce((a,t)=>a+x.stats[t].lowBoth,0)+'</td><td><b>'+(x.formal?x.suggested.length:'待核验')+'</b></td><td>'+(x.formal?51-x.suggested.length:'—')+'</td></tr>';
 $('v2CandidateCaption').textContent=x.formal?'已按规则生成商品ID，可在商城后台执行下架':'缺少季度月份数据或有关键问题，暂不允许导出正式下架名单';
 drawCandidates();
