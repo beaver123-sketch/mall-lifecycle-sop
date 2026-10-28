@@ -242,6 +242,7 @@ function analyze(){
  }
  outcome={sel,range:rng,platform,formal,blocks,warnings,totals,recommendations,eligible,ineligible,issues:allIssues,orderCount:r0.length,dedup:dedup.length,conflict:clash.length,distinct:perDay.size,notStarted,processed:valid.length};
  renderAll();
+ if(formal)saveHistory();
 }
 function renderAll(){
  if(!outcome)return;
