@@ -32,6 +32,7 @@ const load=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')}catch(e){ret
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let db=null,archive=new Map(),platform='POPPO',year=2026,month=10,view='overview',metric='qty',newMetric='qty',designSort='qty',snapshot=null;
 let lifecycleNeedsRefresh=false;
+let startupPromise=null;
 let noticeTimer;
 function notify(s,bad){const el=$('toast');el.textContent=s;el.hidden=false;el.style.background=bad?'#965a55':'#253557';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>el.hidden=true,4000)}
 function alertMsg(s){$('alert').textContent=s;$('alert').hidden=!s}
@@ -206,7 +207,7 @@ async function parse(file){const result={name:file.name,size:file.size,rows:[],i
  result.rows.push({date,cat,id,name:rawName,qty:total,gq,hq,ga,ha,term:String(get('term')||''),source:file.name+'/'+tab.name,line:i+1})}}
  if(!detected)problem(1,'未识别到商城统计表头');
  return result}
-async function importFiles(fs){const files=fs.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!files.length){notify('请选择 Excel 或 CSV 文件',true);return}
+async function importFiles(fs){if(startupPromise)await startupPromise;const files=fs.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!files.length){notify('请选择 Excel 或 CSV 文件',true);return}
  const button=$('headerUpload');button.disabled=true;button.textContent='正在解析…';let total=0,bad=[];
  try{const parsed=[];for(const f of files){const p=await parse(f);parsed.push(p);total+=p.rows.length;if(!p.rows.length)bad.push(f.name)}
   const byMonth=new Map();
@@ -257,6 +258,6 @@ function initEvents(){
  window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))go(p)});
 }
 function setChosen(parent,attr,val){$(parent).querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b.getAttribute(attr)===val))}
-async function init(){const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();initEvents();db=await openDB();await syncDB()}
+async function init(){const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();startupPromise=openDB().then(async connection=>{db=connection;await syncDB();document.documentElement.dataset.mallReady='true'});initEvents();await startupPromise}
 init().catch(e=>{alertMsg('无法使用浏览器数据存储：'+e.message);notify('页面初始化失败',true)});
 })();
