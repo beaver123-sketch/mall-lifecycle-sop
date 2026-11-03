@@ -141,8 +141,34 @@ jobs:
               await page.waitForFunction(()=>document.querySelectorAll('#fileList [data-remove]').length===0,null,{timeout:15000});
               if(confirmDialogs)throw Error('One-click removal unexpectedly displayed a browser dialog');
               if((await page.locator('#dataDetails').innerText()).includes('2 条有效记录'))throw Error('Removing the only file did not refresh the report');
+              // Bulk clear should remove only the selected month's files, never neighboring months or product IDs.
+              const sample=(date,id)=>[
+                '日期,商品类型,商品名称,总销量,金币金额,荣誉券金额,金币销量,荣誉券销量',
+                date+',头像框,测试商品（'+id+'）,3,3000,0,3,0'
+              ].join(String.fromCharCode(10));
+              await page.locator('#fileInput').setInputFiles([
+                {name:'oct-a.csv',mimeType:'text/csv',buffer:Buffer.from(sample('2026-10-10','1386'),'utf8')},
+                {name:'oct-b.csv',mimeType:'text/csv',buffer:Buffer.from(sample('2026-10-11','1387'),'utf8')},
+                {name:'sep-a.csv',mimeType:'text/csv',buffer:Buffer.from(sample('2026-09-11','1351'),'utf8')}
+              ]);
+              await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('2个月'),null,{timeout:20000});
+              await page.locator('a[data-page="data"]').click();
+              await page.locator('#month').selectOption('10');
+              await page.waitForFunction(()=>document.querySelectorAll('#fileList [data-remove]').length===2,null,{timeout:15000});
+              if(await page.locator('#clearMonthFiles').isDisabled())throw Error('Bulk clear should be enabled when files exist');
+              const previousDialogs=confirmDialogs;
+              await page.locator('#clearMonthFiles').click();
+              await page.waitForFunction(()=>
+                 document.querySelectorAll('#fileList [data-remove]').length===0 &&
+                 document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:15000});
+              if(confirmDialogs!==previousDialogs)throw Error('Bulk clear opened an unwanted dialog');
+              if(!(await page.locator('#clearMonthFiles').isDisabled()))throw Error('Bulk clear should disable after deleting all files');
+              if(!(await page.locator('#dataDetails').innerText()).includes('0 条有效记录'))throw Error('Bulk clear did not refresh current-month statistics');
+              if(!(await page.locator('#launchCount').innerText()).includes('20 个'))throw Error('Bulk clear unexpectedly deleted October launch IDs');
+              await page.locator('#month').selectOption('9');
+              if((await page.locator('#fileList [data-remove]').count())!==1)throw Error('Bulk clear unexpectedly removed September file');
               await page.locator('a[data-page="overview"]').click();
-              console.log('PASS: no-dialog file removal, report refresh and five-tab navigation.');
+              console.log('PASS: no-dialog single/bulk file removal, monthly isolation and five-tab navigation.');
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
