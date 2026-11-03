@@ -31,3 +31,27 @@ body.show-lifecycle .content{max-width:1660px;padding-top:22px}
 #page-new .wide-table thead th:nth-child(2){color:#5c6f8f}
 #page-new .wide-table tbody td{padding-top:15px;padding-bottom:15px}
 @media(max-width:650px){.category-tabs{margin-bottom:15px}.category-tab{padding:8px 10px}}
+
+/* Compact sidebar: one business group, single utility at the bottom. */
+.sidebar{overflow-y:auto;overflow-x:hidden}
+.brand{margin-top:29px;margin-bottom:30px}
+.nav-main{gap:5px}
+.nav-link{padding:11px 14px;min-height:43px;gap:12px;letter-spacing:.05px}
+.nav-link .nav-ico{width:19px;height:19px;flex:0 0 19px}
+.nav-link .nav-label{display:inline-block;white-space:nowrap}
+.nav-link.active{background:#f0f4ff;color:#4764ce}
+.sidebar-tools{margin-top:auto;padding-top:26px;padding-bottom:10px}
+.nav-tools{margin:0 13px;padding:15px 0 0;border-top:1px solid #edf0f5}
+.sidebar-bottom{margin:16px 22px 8px;padding:0;border:0;line-height:20px}
+@media(max-width:950px){
+  .brand{margin-bottom:28px}
+  .nav-link{justify-content:center;padding:12px 0;gap:0}
+  .nav-link .nav-label{display:none}
+  .nav-link .nav-ico{width:21px;height:21px;flex-basis:21px}
+  .nav-tools{margin:0 9px;padding-top:13px}
+  .sidebar-bottom{display:none}
+}
+@media(max-width:650px){
+  .nav-link .nav-ico{width:19px;height:19px;flex-basis:19px}
+  .nav-tools{margin:0 6px}
+}
