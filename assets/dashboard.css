@@ -13,3 +13,21 @@ body.show-lifecycle .top-actions{display:none}
 .lifecycle-embed iframe{display:block;width:100%;min-height:660px;border:0;background:#f7f9fc;overflow:hidden}
 body.show-lifecycle .content{max-width:1660px;padding-top:22px}
 @media(max-width:650px){body.show-lifecycle .content{padding:12px 8px 40px}}
+
+/* New arrivals — direct category recognition without extra explanation cards. */
+.category-tabs{display:flex;gap:8px;align-items:center;overflow-x:auto;white-space:nowrap;margin:-2px 0 20px;padding-bottom:3px;scrollbar-width:thin}
+.category-tab{background:#fff;color:#687b96;border:1px solid #e3e8f1;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+.category-tab b{color:#9aa7b9;font-weight:650;font-size:11px}
+.category-tab.selected{color:#435fc7;background:#f1f5ff;border-color:#bdcaef}
+.category-tab.selected b{color:#536ecc}
+.category-tab:hover:not(.selected){border-color:#b8c7df;background:#fbfcff}
+.type-badge{display:inline-flex;align-items:center;gap:7px;border-radius:7px;border:1px solid #dce6f0;background:#f5f8fd;color:#385678;padding:6px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+.type-badge i{width:6px;height:6px;border-radius:50%;display:inline-block;background:#7692b2;flex-shrink:0}
+.type-badge.type-0{background:#f1f5ff;border-color:#d9e2fa;color:#4466ab}.type-badge.type-0 i{background:#6b8bd0}
+.type-badge.type-1{background:#f0f8f7;border-color:#d7eeeb;color:#397e78}.type-badge.type-1 i{background:#63ada5}
+.type-badge.type-2{background:#f6f3fc;border-color:#e8e0f6;color:#72569b}.type-badge.type-2 i{background:#9c82c9}
+.type-badge.type-3{background:#f9f6ee;border-color:#eee7d7;color:#897149}.type-badge.type-3 i{background:#b89a63}
+.type-badge.type-4{background:#f5f7fb;border-color:#dfe6ee;color:#536b85}.type-badge.type-4 i{background:#7d91a7}
+#page-new .wide-table thead th:nth-child(2){color:#5c6f8f}
+#page-new .wide-table tbody td{padding-top:15px;padding-bottom:15px}
+@media(max-width:650px){.category-tabs{margin-bottom:15px}.category-tab{padding:8px 10px}}
