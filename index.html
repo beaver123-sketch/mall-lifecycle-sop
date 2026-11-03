@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
-<link rel="stylesheet" href="assets/dashboard.css?v=20261103-tabfix1">
+<link rel="stylesheet" href="assets/dashboard.css?v=20261103-types-v2">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="assets/dashboard.js?v=20261103-tabfix1" defer></script>
+<script src="assets/dashboard.js?v=20261103-types-v2" defer></script>
 </head>
 <body>
 <div class="app">
@@ -68,8 +68,8 @@
           <div class="chart-legend"><span><i class="legend-dot teal"></i>本月新品</span><span><i class="legend-dot gray"></i>存量商品</span></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><div><h2>新品销售明细</h2><div class="subtle" id="newCount"></div></div><div class="table-actions"><select id="newType"><option value="">全部品类</option></select><input id="newSearch" type="search" placeholder="搜索商品名称 / ID" aria-label="搜索新品"></div></div>
-          <div class="table-wrap"><table class="wide-table"><thead><tr><th>商品名称 / ID</th><th>品类</th><th class="num">销量</th><th class="num">金币收益 ($)</th><th class="num">荣誉券</th><th>首销日</th><th class="num">首销后日均</th></tr></thead><tbody id="newRows"></tbody></table></div>
+          <div class="panel-head"><div><h2>新品销售明细</h2><div class="subtle" id="newCount"></div></div><div class="table-actions"><select id="newType" hidden aria-label="选择商品类型"><option value="">全部商品</option></select><input id="newSearch" type="search" placeholder="搜索商品名称 / ID" aria-label="搜索新品"></div></div><div class="category-tabs" id="newTypeFilters" role="group" aria-label="筛选新品商品类型"></div>
+          <div class="table-wrap"><table class="wide-table"><thead><tr><th>商品名称 / ID</th><th>商品类型</th><th class="num">销量（件）</th><th class="num">金币收益（$）</th><th class="num">荣誉券（券）</th><th>首销日期</th><th class="num">首销后日均（件）</th></tr></thead><tbody id="newRows"></tbody></table></div>
         </div>
       </section>
       <section class="view" id="page-design" hidden>
@@ -113,7 +113,7 @@
       </section>
       <section class="view" id="page-lifecycle" hidden>
         <div class="lifecycle-embed">
-          <iframe id="lifecycleFrame" title="商城商品动态上下架管理" src="lifecycle.html?v=20261103-tabfix1" scrolling="no"></iframe>
+          <iframe id="lifecycleFrame" title="商城商品动态上下架管理" src="lifecycle.html?v=20261103-integrated-v2" scrolling="no"></iframe>
         </div>
       </section>
     </div>
