@@ -38,6 +38,32 @@ jobs:
               ].join(String.fromCharCode(10));
               await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv,'utf8')});
               await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:20000});
+              // Numeric columns should share their alignment between headers and rows.
+              const alignmentCheck=async(selector)=>{
+                return page.locator(selector).evaluate(table=>{
+                  const rows=[...table.querySelectorAll('tbody tr')].filter(row=>row.querySelectorAll('td').length>1);
+                  if(!rows.length)return {ok:false,issue:'No data rows'};
+                  const headers=[...table.querySelectorAll('thead th')],cells=[...rows[0].querySelectorAll('td')];
+                  for(let i=0;i<headers.length;i++){
+                    if(!cells[i]||!cells[i].classList.contains('num'))continue;
+                    if(!headers[i].classList.contains('num'))return {ok:false,issue:'Missing numeric header class at '+i};
+                    if(getComputedStyle(headers[i]).textAlign!=='right'||getComputedStyle(cells[i]).textAlign!=='right')return {ok:false,issue:'Numeric text-align mismatch at '+i};
+                    const h=document.createRange();h.selectNodeContents(headers[i]);
+                    const v=document.createRange();v.selectNodeContents(cells[i]);
+                    if(Math.abs(h.getBoundingClientRect().right-v.getBoundingClientRect().right)>3)return {ok:false,issue:'Visible text alignment mismatch at '+i};
+                  }
+                  return {ok:true};
+                });
+              };
+              await page.locator('a[data-page="design"]').click();
+              await page.locator('#designCategoryRows tr').first().waitFor();
+              const catAlignment=await alignmentCheck('#page-design .panel:last-child table');
+              if(!catAlignment.ok)throw Error('Design category table: '+catAlignment.issue);
+              const seriesAlignment=await alignmentCheck('#page-design .panel:nth-last-child(2) table');
+              if(!seriesAlignment.ok)throw Error('Design series table: '+seriesAlignment.issue);
+              await page.locator('a[data-page="overview"]').click();
+              const overallAlignment=await alignmentCheck('#page-overview .two-cols .panel:first-child table');
+              if(!overallAlignment.ok)throw Error('Overview category table: '+overallAlignment.issue);
               await page.locator('a[data-page="new"]').click();
               await page.locator('.category-tab[data-new-type="头像框"]').waitFor();
               await page.locator('.category-tab[data-new-type="头像框"]').click();
