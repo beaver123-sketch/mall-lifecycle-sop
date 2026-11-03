@@ -175,7 +175,7 @@ async function importFiles(fs){const files=fs.filter(f=>/\.(xlsx|xls|csv)$/i.tes
    for(const [m,rows] of groups){if(!byMonth.has(m))byMonth.set(m,[]);byMonth.get(m).push({...p,rows})}}
   for(const [m,entries] of byMonth){const k=key(platform,m),old=await readOne(k),map=new Map((old?.files||[]).map(f=>[f.name.toLowerCase(),f]));for(const f of entries)map.set(f.name.toLowerCase(),f);await writeOne({key:k,platform,ym:m,files:[...map.values()],savedAt:new Date().toISOString()})}
   const first=[...byMonth.keys()].sort()[0];if(first){year=+first.slice(0,4);month=+first.slice(5)}
-  await syncDB();notify('已导入 '+files.length+' 个文件 · '+pretty(total)+' 条记录'+(bad.length?' · '+bad.length+' 个文件需要检查':''),!!bad.length);go('overview');
+  await syncDB();syncSOP();notify('已导入 '+files.length+' 个文件 · '+pretty(total)+' 条记录'+(bad.length?' · '+bad.length+' 个文件需要检查':''),!!bad.length);go('overview');
  }catch(e){notify('上传失败：'+e.message,true)}finally{button.disabled=false;button.textContent='＋ 上传数据';$('fileInput').value=''}}
 function parseLaunches(raw){let out=[],seen=new Set();for(const line of raw.split(/[\r\n;；]+/)){const p=line.trim().split(/[,，\t]+/).map(x=>x.trim()).filter(Boolean);if(!p.length)continue;
  let match=p[0].match(/^(?:(头像框|派对背景|派对主题|资料卡|聊天气泡|座驾)\s*[:：]\s*)?(\d+)$/),id=match?.[2]||p[0].replace(/[^\d]/g,''),cat=match?.[1]?catOf(match[1]):'',launchDate='',extra=p.slice(1);
