@@ -154,8 +154,7 @@ function render(){snapshot=aggregate(ym());const a=snapshot;document.body.classL
 }
 function openLifecycleTab(){
  const frame=$('lifecycleFrame');
- if(!frame.getAttribute('src'))frame.setAttribute('src','lifecycle.html');
- else if(frame.contentDocument)requestAnimationFrame(resizeLifecycleFrame);
+ if(frame.contentDocument)requestAnimationFrame(resizeLifecycleFrame);
 }
 let lifecycleObserver=null;
 function resizeLifecycleFrame(){
