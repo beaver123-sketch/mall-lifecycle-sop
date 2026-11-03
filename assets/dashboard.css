@@ -80,3 +80,70 @@ body.show-lifecycle .content{max-width:1660px;padding-top:22px}
  .content .panel .table-wrap tbody td{padding:11px 9px}
  .content .panel .table-wrap thead th:last-child,.content .panel .table-wrap tbody td:last-child{padding-right:11px}
 }
+
+
+/* Full-dashboard UI review — consistent five-tab hierarchy and spacing. */
+:root{--line:#e9edf4;--text:#24334c;--muted:#8a97aa;--primary:#4866d2}
+.page-head{margin-bottom:23px;gap:18px}
+.page-head h1{font-size:26px;line-height:1.25;font-weight:750;letter-spacing:-.4px;color:#1c2d47}
+.page-date{font-size:12px;line-height:1.5;color:#97a4b7;margin-top:8px}
+.panel{padding:23px 24px;border-radius:12px;border-color:#edf0f5}
+.panel-head{min-height:28px;margin-bottom:18px;gap:15px}
+.panel-head h2{font-size:15px;font-weight:725;color:#243550}
+.panel-head .subtle{line-height:1.45}
+.metric-grid{gap:14px;margin-bottom:18px}
+.metric{min-height:119px;padding:19px 20px 16px;border-color:#edf0f5}
+.metric-label{font-size:11.5px;color:#8997ab}
+.metric-amount{font-variant-numeric:tabular-nums;margin:15px 0 9px}
+.metric-foot{font-size:11px;color:#9aa8b9;line-height:1.5}
+.button{min-height:36px;border-radius:8px}
+.top-actions select,.table-actions select,.table-actions input{height:36px;border-color:#e3e9f2}
+input[type=search]:focus,textarea:focus,select:focus{outline:none;border-color:#9aaee2}
+.trend{height:288px}
+.chart-legend{padding-top:8px}
+.two-cols{gap:18px}
+.two-cols .panel{min-height:0}
+#page-design .design-highlights{gap:16px;margin-bottom:18px}
+#page-design .highlight{min-height:118px;padding:19px 21px;border-color:#edf0f5}
+#page-design .highlight h3{margin:13px 0 7px}
+.view#page-design .panel{margin-top:0}
+.view#page-design .panel+.panel{margin-top:18px}
+#page-design .table-wrap{min-height:80px}
+#page-new .table-actions{flex-wrap:wrap;justify-content:flex-end}
+#page-new .category-tabs{margin:0 0 17px}
+#page-new .wide-table .product-name{max-width:300px}
+#page-new .table-wrap table td:nth-child(2){min-width:112px}
+#page-overview .two-cols .panel{padding-top:21px}
+#page-data .file-list{max-height:276px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+#page-data .file-item{min-width:0}
+#page-data .file-item>div{min-width:0}
+#page-data .file-item strong{max-width:100%}
+#page-data .months{gap:9px}
+#page-data .month-pill{min-height:55px}
+#page-data .data-details{margin-top:17px}
+#page-data #issues{height:auto;min-height:105px;max-height:259px}
+#page-data #launchInput{height:195px}
+#page-data #goLifecycle{display:none}
+#page-data .issues .empty{min-height:100px}
+#page-data .upload-zone{min-height:220px}
+#page-data .upload-zone:focus-visible{outline:2px solid #9aafe6;outline-offset:2px}
+#page-new .table-wrap table tbody tr,
+#page-design .table-wrap table tbody tr{transition:background .15s ease}
+#page-new .table-wrap table tbody tr:hover,
+#page-design .table-wrap table tbody tr:hover{background:#fbfcff}
+@media(max-width:1250px){
+ .panel{padding:21px 20px}
+ .page-head h1{font-size:24px}
+ .metric{padding:17px 17px 15px}
+ .metric-amount{font-size:25px}
+}
+@media(max-width:650px){
+ .page-head{margin-bottom:20px}
+ .page-head h1{font-size:23px}
+ .panel{padding:18px 15px}
+ .metric{padding:15px}
+ .trend{height:252px}
+ .top-actions{gap:7px}
+ .two-cols{gap:14px}
+ .view#page-design .panel+.panel{margin-top:14px}
+}
