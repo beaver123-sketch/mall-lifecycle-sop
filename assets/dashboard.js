@@ -2,7 +2,7 @@
 const $=s=>document.getElementById(s);
 const CATS=['头像框','派对背景','资料卡','聊天气泡','座驾','推荐套餐','靓号'];
 const CORE=CATS.slice(0,5),LABELS={'派对背景':'派对主题'};
-const LAUNCH_KEY='mall-dashboard-launches-v1',SOP_NEW='mall-sop-v31-new';
+const LAUNCH_KEY='mall-dashboard-launches-v1',SOP_NEW='mall-sop-v31-new',PERIOD_KEY='mall-dashboard-selected-period-v1';
 const OCT_IDS='1397 1417 1416 1431 1398 1418 1419 1432 1399 1421 1420 1433 61 1400 1422 1423 1434 1386 1385 1387'.split(' ');
 const ALIASES={
 date:['时间','日期','统计日期','下单日期','购买日期','统计时间','date','day'],
@@ -149,7 +149,7 @@ function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textConte
  const issues=issuesFor(a);$('issueCount').textContent=issues.length+' 项';
  $('issues').innerHTML=issues.map(x=>'<div class="issue">'+(x.severity==='error'?'<strong>需核对 · </strong>':'')+escapeHtml(x.text)+'</div>').join('')||'<div class="empty">未发现关键数据异常</div>';
 }
-function render(){snapshot=aggregate(ym());const a=snapshot;document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
+function render(){snapshot=aggregate(ym());const a=snapshot;save(PERIOD_KEY,{year,month});syncMonthNavigators();document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
  $('crumb').textContent={overview:'经营总览',new:'新品分析',design:'设计方向',lifecycle:'动态上下架',data:'数据管理'}[view]||'经营总览';
  $('archiveCount').textContent=[...archive.values()].filter(v=>v.platform===platform&&v.files?.length).length+'个月';
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
@@ -190,6 +190,41 @@ function bindLifecycleFrame(){
   }catch(err){console.warn('无法自动调整上下架页签高度',err)}
  });
  window.addEventListener('resize',()=>{if(view==='lifecycle')requestAnimationFrame(resizeLifecycleFrame)});
+}
+
+
+function selectPeriod(value){
+ const m=/^(\d{4})-(\d{2})$/.exec(String(value||''));
+ if(!m)return;
+ const y=+m[1],mo=+m[2];
+ if(y<2020||y>2100||mo<1||mo>12)return;
+ year=y;month=mo;refreshSelections();render();
+}
+function shiftPeriod(step){
+ const d=new Date(Date.UTC(year,month-1+step,1));
+ selectPeriod(d.toISOString().slice(0,7));
+}
+function syncMonthNavigators(){
+ const current=ym();
+ const months=new Set([current]);
+ for(const entry of archive.values())if(entry.platform===platform&&entry.files?.length&&/^\d{4}-\d{2}$/.test(entry.ym))months.add(entry.ym);
+ const options=[...months].sort((a,b)=>b.localeCompare(a)).map(m=>{
+  const stored=archiveEntry(m),hasRows=!!stored?.files?.some(f=>(f.rows||[]).length);
+  const label=+m.slice(0,4)+'年'+(+m.slice(5))+'月'+(hasRows?'':' · 无数据');
+  return '<option value="'+m+'">'+label+'</option>';
+ }).join('');
+ document.querySelectorAll('.month-picker').forEach(el=>{el.innerHTML=options;el.value=current});
+ const prev=year>2020||month>1,next=year<2100||month<12;
+ document.querySelectorAll('[data-month-step]').forEach(btn=>{
+  btn.disabled=btn.dataset.monthStep==='-1'?!prev:!next;
+ });
+ const missing=!snapshot.rows;
+ for(const page of ['overview','new','design']){
+  const node=$('page-'+page);
+  node.classList.toggle('month-no-data',missing);
+  const empty=node.querySelector('.month-empty');
+  if(empty)empty.hidden=!missing;
+ }
 }
 
 function go(p){view=['overview','new','design','lifecycle','data'].includes(p)?p:'overview';history.replaceState(null,'','#'+view);render();window.scrollTo({top:0,behavior:'instant'})}
@@ -237,6 +272,8 @@ async function restore(file){try{const j=JSON.parse(await file.text());if(j.form
 function initEvents(){
  document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();go(b.dataset.page)}));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
+ document.querySelectorAll('.month-picker').forEach(el=>el.addEventListener('change',e=>selectPeriod(e.target.value)));
+ document.querySelectorAll('[data-month-step]').forEach(btn=>btn.addEventListener('click',()=>shiftPeriod(+btn.dataset.monthStep)));
  $('platform').addEventListener('change',e=>{platform=e.target.value;render()});
  $('year').addEventListener('change',e=>{year=+e.target.value;render()});
  $('month').addEventListener('change',e=>{month=+e.target.value;render()});
@@ -258,6 +295,6 @@ function initEvents(){
  window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))go(p)});
 }
 function setChosen(parent,attr,val){$(parent).querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b.getAttribute(attr)===val))}
-async function init(){const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();startupPromise=openDB().then(async connection=>{db=connection;await syncDB();document.documentElement.dataset.mallReady='true'});initEvents();await startupPromise}
+async function init(){const period=load(PERIOD_KEY);if(Number.isInteger(period.year)&&period.year>=2020&&period.year<=2100)year=period.year;if(Number.isInteger(period.month)&&period.month>=1&&period.month<=12)month=period.month;const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();startupPromise=openDB().then(async connection=>{db=connection;await syncDB();document.documentElement.dataset.mallReady='true'});initEvents();await startupPromise}
 init().catch(e=>{alertMsg('无法使用浏览器数据存储：'+e.message);notify('页面初始化失败',true)});
 })();
