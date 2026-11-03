@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
-<link rel="stylesheet" href="assets/dashboard.css?v=20261103-sidebar-v1">
+<link rel="stylesheet" href="assets/dashboard.css?v=20261103-table-align-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="assets/dashboard.js?v=20261103-types-v3" defer></script>
 </head>
@@ -51,7 +51,7 @@
         <div class="two-cols">
           <div class="panel">
             <div class="panel-head"><h2>品类销售结构</h2><span class="subtle" id="categoryTitle"></span></div>
-            <div class="table-wrap"><table><thead><tr><th>商品品类</th><th>销量</th><th>占比</th></tr></thead><tbody id="categoryRows"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>商品品类</th><th class="num">销量</th><th class="num">占比</th></tr></thead><tbody id="categoryRows"></tbody></table></div>
           </div>
           <div class="panel">
             <div class="panel-head"><h2>热销商品 TOP 8</h2><span class="subtle">按销量排序</span></div>
@@ -77,11 +77,11 @@
         <div class="design-highlights" id="designHighlights"></div>
         <div class="panel">
           <div class="panel-head"><div><h2>新品系列表现</h2><div class="subtle">同名系列跨品类汇总</div></div><div class="segmented" id="designSort"><button class="chosen" data-sort="qty">按销量</button><button data-sort="coin">按金币收益</button></div></div>
-          <div class="table-wrap"><table class="wide-table"><thead><tr><th>设计系列</th><th class="num">SKU</th><th class="num">销量</th><th class="num">金币收益 ($)</th><th class="num">荣誉券</th><th>表现</th></tr></thead><tbody id="designRows"></tbody></table></div>
+          <div class="table-wrap"><table class="wide-table"><thead><tr><th>设计系列</th><th class="num">SKU</th><th class="num">销量</th><th class="num">金币收益（$）</th><th class="num">荣誉券</th><th>表现</th></tr></thead><tbody id="designRows"></tbody></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><div><h2>品类设计参考</h2></div></div>
-          <div class="table-wrap"><table><thead><tr><th>品类</th><th class="num">新品 SKU</th><th class="num">新品销量</th><th class="num">新品销量占品类</th><th>金币收益 ($)</th></tr></thead><tbody id="designCategoryRows"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>品类</th><th class="num">新品 SKU</th><th class="num">新品销量</th><th class="num">新品销量占品类</th><th class="num">金币收益（$）</th></tr></thead><tbody id="designCategoryRows"></tbody></table></div>
         </div>
       </section>
       <section class="view" id="page-data" hidden>
