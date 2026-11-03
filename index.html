@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
-<link rel="stylesheet" href="assets/dashboard.css?v=20261103-full-ui-review-v1">
+<link rel="stylesheet" href="assets/dashboard.css?v=20261103-month-history-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="assets/dashboard.js?v=20261103-direct-remove-v1" defer></script>
+<script src="assets/dashboard.js?v=20261103-month-history-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -39,7 +39,7 @@
     <div class="content">
       <div class="alert" id="alert" hidden role="status"></div>
       <section class="view" id="page-overview">
-        <div class="page-head"><div><h1>经营总览</h1><div class="page-date" id="overviewPeriod"></div></div><button class="button light" id="exportSummary" type="button">导出月报</button></div>
+        <div class="page-head"><div><h1>经营总览</h1><div class="page-date" id="overviewPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div><button class="button light" id="exportSummary" type="button">导出月报</button></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
         <div class="metric-grid" id="overviewMetrics"></div>
         <div class="panel chart-panel">
           <div class="panel-head"><div><h2>销售趋势</h2><div class="subtle">按日统计</div></div>
@@ -60,7 +60,7 @@
         </div>
       </section>
       <section class="view" id="page-new" hidden>
-        <div class="page-head"><div><h1>新品分析</h1><div class="page-date" id="newPeriod"></div></div><button class="button light" type="button" data-goto="data">管理上新ID</button></div>
+        <div class="page-head"><div><h1>新品分析</h1><div class="page-date" id="newPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div><button class="button light" type="button" data-goto="data">管理上新ID</button></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
         <div class="metric-grid" id="newMetrics"></div>
         <div class="panel chart-panel">
           <div class="panel-head"><div><h2>新品销售趋势</h2><div class="subtle">新品与存量商品</div></div><div class="segmented" id="newMetricSwitch"><button class="chosen" data-metric="qty">销量</button><button data-metric="coin">金币收益</button><button data-metric="ticket">荣誉券</button></div></div>
@@ -73,7 +73,7 @@
         </div>
       </section>
       <section class="view" id="page-design" hidden>
-        <div class="page-head"><div><h1>设计方向</h1><div class="page-date" id="designPeriod"></div></div></div>
+        <div class="page-head"><div><h1>设计方向</h1><div class="page-date" id="designPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
         <div class="design-highlights" id="designHighlights"></div>
         <div class="panel">
           <div class="panel-head"><div><h2>新品系列表现</h2><div class="subtle">同名系列跨品类汇总</div></div><div class="segmented" id="designSort"><button class="chosen" data-sort="qty">按销量</button><button data-sort="coin">按金币收益</button></div></div>
