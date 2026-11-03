@@ -79,6 +79,23 @@ jobs:
               if(await page.frameLocator('#lifecycleFrame').locator('#v23Upload').isVisible())throw Error('Legacy upload button must be hidden');
               if(!(await page.frameLocator('#lifecycleFrame').locator('#v2Run').isVisible()))throw Error('Quarter analysis button should remain visible');
               await page.frameLocator('#lifecycleFrame').locator('.v23-month.filled').first().waitFor({state:'attached',timeout:20000});
+              const lf=page.frameLocator('#lifecycleFrame');
+              const filterPanel=await lf.locator('#v2-upload').boundingBox();
+              const quarterControl=await lf.locator('#v2Quarter').boundingBox();
+              const analyzeButton=await lf.locator('#v2Run').boundingBox();
+              if(!filterPanel||!quarterControl||!analyzeButton)throw Error('Lifecycle filters not rendered');
+              if(filterPanel.height>170)throw Error('Quarter filter panel is still excessively tall: '+filterPanel.height);
+              if(analyzeButton.x-quarterControl.x-quarterControl.width>38)throw Error('Analyze button still far from quarter control');
+              const collapsed=await lf.locator('#v2-history').evaluate(el=>el.tagName==='DETAILS'&&!el.open);
+              if(!collapsed)throw Error('History section must be collapsed by default');
+              if(await lf.locator('#v23-delisted .v23-guidance').isVisible())throw Error('Redundant delisted guidance must be hidden');
+              for(const tab of ['overview','new','design','data']){
+                await page.locator('a[data-page="'+tab+'"]').click();
+                if(!(await page.locator('#page-'+tab).isVisible()))throw Error('Page failed to open: '+tab);
+                const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+                if(overflow>5)throw Error('Page has horizontal overflow in '+tab+': '+overflow);
+              }
+              await page.locator('a[data-page="lifecycle"]').click();
               await page.locator('a[data-page="overview"]').click();
               await page.waitForFunction(()=>
                 location.hash==='#overview' && !document.querySelector('#page-overview').hidden,
