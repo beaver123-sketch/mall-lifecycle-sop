@@ -30,6 +30,7 @@ jobs:
             const page=await browser.newPage();
             try{
               await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:30000});
+              await page.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
               const csv=[
                 '日期,商品类型,商品名称,总销量,金币金额,荣誉券金额,金币销量,荣誉券销量',
                 '2026-10-10,头像框,Candy Cute Ghost（1386）,5,5000,0,5,0',
