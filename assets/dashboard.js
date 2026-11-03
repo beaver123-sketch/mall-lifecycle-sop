@@ -228,7 +228,7 @@ function syncSOP(){const all=load(LAUNCH_KEY),q=year+'-Q'+Math.ceil(month/3),sop
   for(const z of n){let cats=z.cat?[z.cat]:[...new Set(records.filter(r=>r.id===z.id&&CORE.includes(r.cat)).map(r=>r.cat))];for(const c of cats)if(CORE.includes(c)&&!current[c].includes(z.id))current[c].push(z.id)}}
  sop[k]=current;save(SOP_NEW,sop)}
 function saveLaunches(){const items=parseLaunches($('launchInput').value),store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);syncSOP();lifecycleNeedsRefresh=true;render();notify('新品名单已保存 · '+items.length+' 个')}
-async function removeFile(name){if(!confirm('确认移除 '+name+'？'))return;const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();lifecycleNeedsRefresh=true;notify('已移除文件')}
+async function removeFile(name){const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length===(old.files||[]).length)return;if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();lifecycleNeedsRefresh=true;notify('已移除：'+name)}
 const download=(name,content,type)=>{const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 const csvEsc=v=>{let s=String(v??'');if(/^[=+@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
 function exportSummary(){const a=snapshot,w=a.whole,rows=[['月份','总销量','金币收益(美元)','荣誉券收益','成交SKU','新品SKU','新品销量','新品金币收益(美元)','新品荣誉券收益','新品销量贡献率'],[ym(),w.qty,(w.coin/1000).toFixed(2),w.ticket,a.skus.length,a.skus.filter(s=>s.new).length,w.newQty,(w.newCoin/1000).toFixed(2),w.newTicket,percent(w.newQty,w.qty)]];download('商城月报_'+ym()+'.csv','\uFEFF'+rows.map(x=>x.map(csvEsc).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
@@ -249,7 +249,7 @@ function initEvents(){
  $('newType').addEventListener('change',renderNew);$('newTypeFilters').addEventListener('click',e=>{const b=e.target.closest('[data-new-type]');if(!b)return;$('newType').value=b.dataset.newType;renderNew()});$('newSearch').addEventListener('input',renderNew);
  $('monthGrid').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;month=+b.dataset.m;refreshSelections();render()});
  $('saveLaunch').addEventListener('click',saveLaunches);
- $('fileList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(b)removeFile(b.dataset.remove)});
+ $('fileList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b||b.disabled)return;b.disabled=true;removeFile(b.dataset.remove).catch(err=>{b.disabled=false;notify('移除失败：'+err.message,true)})});
  $('exportSummary').addEventListener('click',exportSummary);
  $('backup').addEventListener('click',()=>backup().catch(e=>notify(e.message,true)));
  $('restoreButton').addEventListener('click',()=>$('backupInput').click());
