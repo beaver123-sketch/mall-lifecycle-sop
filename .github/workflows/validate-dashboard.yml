@@ -57,7 +57,17 @@ jobs:
               await page.waitForFunction(()=>
                 location.hash==='#overview' && !document.querySelector('#page-overview').hidden,
                 null,{timeout:15000});
-              console.log('PASS: lifecycle tab opens in-place and returns to overview.');
+              if((await page.locator('.nav-main [data-page]').count())!==4)throw Error('Main navigation must contain four business tabs');
+              if(await page.locator('.sidebar .side-group').count())throw Error('Old sidebar section labels should be removed');
+              const sidebarBox=await page.locator('.sidebar').boundingBox();
+              const toolsBox=await page.locator('.nav-tools').boundingBox();
+              if(!sidebarBox||!toolsBox||toolsBox.y<sidebarBox.y+sidebarBox.height*0.55)throw Error('Data management must stay at the bottom');
+              await page.locator('a[data-page="data"]').click();
+              await page.waitForFunction(()=>
+                location.hash==='#data' && !document.querySelector('#page-data').hidden &&
+                document.querySelector('a[data-page="data"]').classList.contains('active'),null,{timeout:15000});
+              await page.locator('a[data-page="overview"]').click();
+              console.log('PASS: compact sidebar navigation, bottom data tab, lifecycle and overview switching.');
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
