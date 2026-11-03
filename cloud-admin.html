@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f9fc">
+<title>云端管理授权 · 商城数据中心</title>
+<link rel="stylesheet" href="assets/dashboard.css?v=20261103-full-ui-review-v1">
+<style>
+body{background:#f7f9fc;min-height:100vh;display:grid;place-items:center;padding:28px}
+.cloud-admin-wrap{width:min(100%,490px);margin:0 auto}
+.cloud-head{display:flex;gap:10px;align-items:center;margin-bottom:26px}
+.cloud-head .brand-mark{display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:#4866d2;color:#fff;font-size:20px;font-weight:750}
+.cloud-head strong{font-size:15px;color:#24334b}
+.cloud-card{border:1px solid #e8edf5;border-radius:13px;background:#fff;padding:33px 32px 28px;box-shadow:0 9px 30px #1f35530a}
+.cloud-card h1{font-size:22px;margin:0 0 9px;font-weight:750;color:#22324c}
+.cloud-caption{font-size:12px;line-height:1.75;color:#97a4b6;margin-bottom:26px}
+.cloud-card label{display:block;font-size:12px;font-weight:650;color:#63748f;margin-bottom:9px}
+.cloud-input{width:100%;height:44px;border:1px solid #dfe7f2;border-radius:8px;padding:0 13px;outline:none;color:#354862;background:#fff}
+.cloud-input:focus{border-color:#9fb4ee}
+.cloud-submit{width:100%;height:43px;border:0;border-radius:8px;background:#4866d2;color:white;margin-top:16px;font-weight:650;font-size:13px;cursor:pointer}
+.cloud-submit:hover{background:#3a59c6}
+.cloud-submit:disabled{opacity:.55;cursor:not-allowed}
+.cloud-info{min-height:42px;font-size:12px;line-height:1.7;color:#6b7990;margin-top:20px;white-space:pre-line;overflow-wrap:anywhere}
+.cloud-info.error{color:#b06770}
+.cloud-info.success{color:#2d8b74}
+.cloud-footer{margin-top:18px;display:flex;justify-content:space-between;gap:10px}
+.cloud-footer a,.cloud-footer button{color:#8290a5;font-size:12px;background:none;border:0;cursor:pointer;text-decoration:none}
+.cloud-footer a:hover,.cloud-footer button:hover{color:#4465ce}
+.cloud-profile{border:1px solid #edf0f5;border-radius:9px;padding:13px;background:#fafcff;margin:18px 0;font-size:12px;line-height:1.8;color:#576987;overflow-wrap:anywhere}
+.cloud-pill{display:inline-block;padding:3px 9px;background:#f0f4ff;color:#5169bd;border-radius:6px;margin:4px 0}
+[hidden]{display:none!important}
+@media(max-width:550px){.cloud-card{padding:26px 19px}.cloud-card h1{font-size:20px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0/dist/umd/supabase.min.js" defer></script>
+<script src="assets/cloud-admin.js?v=20261103-setup1" defer></script>
+</head>
+<body>
+<div class="cloud-admin-wrap">
+ <div class="cloud-head"><span class="brand-mark">M</span><strong>商城数据中心</strong></div>
+ <section class="cloud-card">
+  <h1>管理员身份验证</h1>
+  <div class="cloud-caption">普通同事无需登录即可查看共享分析。数据上传、修改及删除需要管理员邮箱验证和云端授权。</div>
+  <form id="loginForm">
+   <label for="email">管理员邮箱</label>
+   <input id="email" class="cloud-input" type="email" autocomplete="email" placeholder="请输入用于管理商城数据的邮箱" required>
+   <button class="cloud-submit" id="submit" type="submit">发送登录验证邮件</button>
+  </form>
+  <div id="account" hidden>
+    <div class="cloud-profile"><div>已登录邮箱：<strong id="accountEmail"></strong></div><div id="permission"></div></div>
+    <button id="signOut" class="button light" type="button">退出登录</button>
+  </div>
+  <div id="message" class="cloud-info" role="status"></div>
+  <div class="cloud-footer">
+   <a href="./#data">返回数据管理</a>
+   <button id="refresh" type="button">刷新验证状态</button>
+  </div>
+ </section>
+</div>
+</body>
+</html>
