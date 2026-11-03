@@ -21,7 +21,7 @@
     </nav>
     <div class="side-group separate">商品管理</div>
     <nav class="nav">
-      <a class="nav-link" href="lifecycle.html"><span class="nav-ico">⇄</span>动态上下架<span class="out-icon">↗</span></a>
+      <a class="nav-link" href="#lifecycle" data-page="lifecycle"><span class="nav-ico">⇄</span>动态上下架</a>
       <a class="nav-link" href="#data" data-page="data"><span class="nav-ico">▤</span>数据管理</a>
     </nav>
     <div class="sidebar-bottom"><span class="status-dot"></span> 本地数据空间 <span id="archiveCount">0个月</span></div>
@@ -107,8 +107,13 @@
           <div class="panel">
             <div class="panel-head"><h2>数据核验</h2><span class="subtle" id="issueCount"></span></div>
             <div class="issues" id="issues"></div>
-            <div class="action-row"><button class="button light" id="goLifecycle" type="button">打开动态上下架 ↗</button></div>
+            <div class="action-row"><button class="button light" id="goLifecycle" type="button">查看动态上下架</button></div>
           </div>
+        </div>
+      </section>
+      <section class="view" id="page-lifecycle" hidden>
+        <div class="lifecycle-embed">
+          <iframe id="lifecycleFrame" title="商城商品动态上下架管理" scrolling="no"></iframe>
         </div>
       </section>
     </div>
