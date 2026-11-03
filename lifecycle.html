@@ -596,15 +596,38 @@ header.page h1{color:#182b46;letter-spacing:0}
 .v23-guides .v2-rules{margin-top:10px}
 .v2-archive{margin-top:12px}
 </style><style id="mall-dashboard-backlink-style">.mall-dashboard-backlink{position:fixed;bottom:24px;left:22px;z-index:9999;background:#fff;color:#425dc4;border:1px solid #e9edf5;border-radius:9px;font:600 12px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:11px 15px;box-shadow:0 6px 25px rgba(15,28,55,.13);text-decoration:none}.mall-dashboard-backlink:hover{background:#f0f4ff}</style>
+
+<style id="integrated-lifecycle-simplify">
+/* Data imports, file troubleshooting, monthly archive and backups live only in the unified dashboard. 
+   Preserve these hidden DOM nodes for the legacy analyzer, not for the end user. */
+#v23Months,
+#v2-upload .v23-month-action,
+#v2OrderFiles,
+#v2-upload .v23-file-diagnostics,
+#v2-upload .v23-backup,
+#v2-upload #v23NewDetails,
+#v2Status,
+.v2-topline,
+.sop-nav {display:none!important}
+#v2-upload{padding:18px 22px!important;margin-bottom:16px}
+#v2-upload .v2-section-title{margin-bottom:12px}
+#v2-upload .v2-section-title h2{font-size:15px!important;font-weight:700}
+#v2-upload .v23-toolbar{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:0;margin:0}
+#v2-upload .v23-toolbar .v2-field{min-width:125px;flex:0 1 auto}
+#v2-upload .v23-toolbar #v2Run{min-height:36px}
+header.page{margin-bottom:17px!important;padding-bottom:0!important;border-bottom:0!important}
+header.page h1{font-size:24px!important;letter-spacing:-.25px}
+#v2-summary-anchor .v2-section-title h2{font-size:16px}
+</style>
 </head>
 <body>
 <a class="mall-dashboard-backlink" href="./" aria-label="返回商城数据中心">← 返回商城数据中心</a>
 <div class="wrap">
-  <header class="page"><div class="v2-headline"><h1>商城商品动态上下架管理 · V2.1</h1><span class="v2-pill">固定公式 · 持续增长</span></div><div class="sub">上传季度在售商品订单，填写本季上新ID，自动计算双后25%、排除近期回升并生成下架名单。</div></header>
+  <header class="page"><div class="v2-headline"><h1>商品动态上下架</h1></div></header>
   
-<div class="v2-topline">每月上新17个 · 每季度计划上新51个 · 季度下架上限28个 · 商品池持续增长</div><nav class="sop-nav"><a href="#v2-upload">数据上传</a><a href="#v2-summary-anchor">季度汇总</a><a href="#v2-candidates">下架名单</a><a href="#v23-delisted">已下架记录</a><a href="#v2-observe">持续观察</a><a href="#v23-notes">规则说明</a><a href="#v2-history">历史记录</a></nav><main class="v2-main">
+<div class="v2-topline">每月上新17个 · 每季度计划上新51个 · 季度下架上限28个 · 商品池持续增长</div><nav class="sop-nav"><a href="#v2-upload">季度分析</a><a href="#v2-summary-anchor">季度汇总</a><a href="#v2-candidates">下架名单</a><a href="#v23-delisted">已下架记录</a><a href="#v2-observe">持续观察</a><a href="#v23-notes">规则说明</a><a href="#v2-history">历史记录</a></nav><main class="v2-main">
 <section class="v2-panel" id="v2-upload">
- <div class="v2-section-title"><div><h2>01 / 月度数据仓库</h2><p class="v2-muted">选年份、逐月保存商城订单；季度分析直接合并该季度的3个月，无需重复上传。</p></div><span class="v2-pill">本机持久保存 · 自动复用</span></div>
+ <div class="v2-section-title"><div><h2>季度分析</h2></div></div>
  <div class="v23-toolbar">
   <label class="v2-field">年份<input type="number" id="v23Year" min="2020" max="2100" value="2026" /></label>
   <label class="v2-field">平台<select id="v2Platform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label>
