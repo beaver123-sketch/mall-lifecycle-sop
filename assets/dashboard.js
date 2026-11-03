@@ -143,6 +143,7 @@ function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textConte
  $('archivePeriod').textContent=year+'年';
  $('monthGrid').innerHTML=Array.from({length:12},(_,i)=>{const m=year+'-'+String(i+1).padStart(2,'0'),files=archiveEntry(m)?.files||[];return '<button class="month-pill '+(files.length?'available ':'')+(m===name?'selected':'')+'" data-m="'+(i+1)+'"><strong>'+String(i+1).padStart(2,'0')+'月</strong><small>'+(files.length?files.length+' 份文件':'—')+'</small></button>'}).join('');
  $('dataDetails').innerHTML=pretty(a.rows)+' 条有效记录 · '+pretty(a.skus.length)+' 个成交 SKU';
+ $('clearMonthFiles').disabled=!a.files.length;$('clearMonthFiles').title='清空'+year+'年'+month+'月已上传的全部文件';
  $('fileList').innerHTML=a.files.map(f=>'<div class="file-item"><div><strong>'+escapeHtml(f.name)+'</strong><small>'+pretty((f.rows||[]).length)+' 行 · '+(f.size?pretty(Math.round(f.size/1024))+' KB':'已归档')+'</small></div><button class="text-button" data-remove="'+escapeHtml(f.name)+'">移除</button></div>').join('')||'<div class="empty compact">本月尚未上传文件</div>';
  $('launchInput').value=launchesFor(name).map(x=>x.id+(x.date?','+x.date:'')+(x.cat?','+x.cat:'')).join('\n');
  $('launchCount').textContent=launchesFor(name).length+' 个';
@@ -264,6 +265,18 @@ function syncSOP(){const all=load(LAUNCH_KEY),q=year+'-Q'+Math.ceil(month/3),sop
  sop[k]=current;save(SOP_NEW,sop)}
 function saveLaunches(){const items=parseLaunches($('launchInput').value),store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);syncSOP();lifecycleNeedsRefresh=true;render();notify('新品名单已保存 · '+items.length+' 个')}
 async function removeFile(name){const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length===(old.files||[]).length)return;if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();lifecycleNeedsRefresh=true;notify('已移除：'+name)}
+async function clearMonthFiles(){
+ const btn=$('clearMonthFiles'),selected=ym(),selectedPlatform=platform,k=key(selectedPlatform,selected);
+ if(btn.disabled)return;btn.disabled=true;
+ try{
+  const entry=await readOne(k),count=(entry?.files||[]).length;
+  if(!count){btn.disabled=true;return}
+  await deleteOne(k);
+  lifecycleNeedsRefresh=true;
+  await syncDB();
+  notify('已清空'+selected.replace('-','年')+'月的 '+count+' 个文件');
+ }catch(err){btn.disabled=false;notify('清空失败：'+err.message,true)}
+}
 const download=(name,content,type)=>{const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 const csvEsc=v=>{let s=String(v??'');if(/^[=+@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
 function exportSummary(){const a=snapshot,w=a.whole,rows=[['月份','总销量','金币收益(美元)','荣誉券收益','成交SKU','新品SKU','新品销量','新品金币收益(美元)','新品荣誉券收益','新品销量贡献率'],[ym(),w.qty,(w.coin/1000).toFixed(2),w.ticket,a.skus.length,a.skus.filter(s=>s.new).length,w.newQty,(w.newCoin/1000).toFixed(2),w.newTicket,percent(w.newQty,w.qty)]];download('商城月报_'+ym()+'.csv','\uFEFF'+rows.map(x=>x.map(csvEsc).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
@@ -287,6 +300,7 @@ function initEvents(){
  $('monthGrid').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;month=+b.dataset.m;refreshSelections();render()});
  $('saveLaunch').addEventListener('click',saveLaunches);
  $('fileList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b||b.disabled)return;b.disabled=true;removeFile(b.dataset.remove).catch(err=>{b.disabled=false;notify('移除失败：'+err.message,true)})});
+ $('clearMonthFiles').addEventListener('click',clearMonthFiles);
  $('exportSummary').addEventListener('click',exportSummary);
  $('backup').addEventListener('click',()=>backup().catch(e=>notify(e.message,true)));
  $('restoreButton').addEventListener('click',()=>$('backupInput').click());
