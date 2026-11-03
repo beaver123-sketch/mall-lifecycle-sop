@@ -31,6 +31,7 @@ const number=s=>{if(s===null||s===undefined||String(s).trim()==='')return null;c
 const load=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')}catch(e){return {}}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let db=null,archive=new Map(),platform='POPPO',year=2026,month=10,view='overview',metric='qty',newMetric='qty',designSort='qty',snapshot=null;
+let lifecycleNeedsRefresh=false;
 let noticeTimer;
 function notify(s,bad){const el=$('toast');el.textContent=s;el.hidden=false;el.style.background=bad?'#965a55':'#253557';clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>el.hidden=true,4000)}
 function alertMsg(s){$('alert').textContent=s;$('alert').hidden=!s}
@@ -112,11 +113,14 @@ function renderNew(){const a=snapshot,w=a.whole,arr=a.skus.filter(x=>x.new);
  card('新品销售贡献',percent(w.newQty,w.qty),pretty(w.qty-w.newQty)+' 件存量商品');
  const v=a.daily,m=newMetric,part='new'+m[0].toUpperCase()+m.slice(1);
  renderChart('newTrend',[{name:'本月新品',color:'line-teal',values:v.map(x=>x[part])},{name:'存量商品',color:'line-gray',values:v.map(x=>x[m]-x[part])}],m);
- const select=$('newType'),old=select.value;select.innerHTML='<option value="">全部品类</option>'+CATS.map(t=>'<option value="'+t+'">'+catName(t)+'</option>').join('');select.value=old;
+ const select=$('newType'),old=select.value;select.innerHTML='<option value="">全部商品</option>'+CATS.map(t=>'<option value="'+t+'">'+catName(t)+'</option>').join('');select.value=old;
  const filter=select.value,q=$('newSearch').value.toLowerCase().trim();
+ const allCounts=new Map();for(const s of arr)allCounts.set(s.cat,(allCounts.get(s.cat)||0)+1);
+ $('newTypeFilters').innerHTML='<button type="button" class="category-tab '+(!filter?'selected':'')+'" data-new-type="" aria-pressed="'+(!filter)+'">全部商品 <b>'+arr.length+'</b></button>'+
+   CATS.filter(t=>allCounts.has(t)).map(t=>'<button type="button" class="category-tab '+(filter===t?'selected':'')+'" data-new-type="'+escapeHtml(t)+'" aria-pressed="'+(filter===t)+'">'+escapeHtml(catName(t))+' <b>'+allCounts.get(t)+'</b></button>').join('');
  const listed=arr.filter(x=>(!filter||x.cat===filter)&&(!q||x.name.toLowerCase().includes(q)||x.id.includes(q))).sort((x,y)=>y.qty-x.qty);
  $('newCount').textContent=listed.length+' 件商品';
- const cutoff=endMonth(ym());$('newRows').innerHTML=listed.map(s=>{const days=Math.max(1,dateDiff(s.first,cutoff));return '<tr><td><span class="product-name">'+escapeHtml(s.name.replace(/[（(]\d+[）)]$/,''))+'</span><span class="product-id">ID '+escapeHtml(s.id)+'</span></td><td><span class="tag">'+escapeHtml(catName(s.cat))+'</span></td><td class="num"><strong>'+pretty(s.qty)+'</strong></td><td class="num">'+dollars(s.coin/1000)+'</td><td class="num">'+pretty(s.ticket)+'</td><td>'+escapeHtml(s.first.slice(5))+'</td><td class="num">'+(s.qty/days).toFixed(1)+'</td></tr>'}).join('')||'<tr><td colspan="7">'+empty('暂无匹配的新品',true)+'</td></tr>';
+ const cutoff=endMonth(ym());$('newRows').innerHTML=listed.map(s=>{const days=Math.max(1,dateDiff(s.first,cutoff));return '<tr><td><span class="product-name">'+escapeHtml(s.name.replace(/[（(]\d+[）)]$/,''))+'</span><span class="product-id">ID '+escapeHtml(s.id)+'</span></td><td><span class="type-badge type-'+(Math.max(0,CATS.indexOf(s.cat))%7)+'"><i></i>'+escapeHtml(catName(s.cat))+'</span></td><td class="num"><strong>'+pretty(s.qty)+'</strong></td><td class="num">'+dollars(s.coin/1000)+'</td><td class="num">'+pretty(s.ticket)+'</td><td>'+escapeHtml(s.first.slice(5))+'</td><td class="num">'+(s.qty/days).toFixed(1)+'</td></tr>'}).join('')||'<tr><td colspan="7">'+empty('暂无匹配的新品',true)+'</td></tr>';
 }
 function productSeries(n){return String(n||'').replace(/[（(]\s*\d+\s*[）)]\s*$/,'').trim().replace(/\s+/g,' ')||'未命名'}
 function designGroups(){const map=new Map();for(const s of snapshot.skus.filter(x=>x.new)){const name=productSeries(s.name),id=name.toLowerCase();if(!map.has(id))map.set(id,{name,count:0,qty:0,coin:0,ticket:0,cats:new Set(),items:[]});const g=map.get(id);g.count++;g.qty+=s.qty;g.coin+=s.coin;g.ticket+=s.ticket;g.cats.add(s.cat);g.items.push(s)}return [...map.values()]}
@@ -154,6 +158,11 @@ function render(){snapshot=aggregate(ym());const a=snapshot;document.body.classL
 }
 function openLifecycleTab(){
  const frame=$('lifecycleFrame');
+ if(lifecycleNeedsRefresh){
+  lifecycleNeedsRefresh=false;
+  frame.src='lifecycle.html?revision='+Date.now();
+  return;
+ }
  if(frame.contentDocument)requestAnimationFrame(resizeLifecycleFrame);
 }
 let lifecycleObserver=null;
@@ -206,7 +215,7 @@ async function importFiles(fs){const files=fs.filter(f=>/\.(xlsx|xls|csv)$/i.tes
    for(const [m,rows] of groups){if(!byMonth.has(m))byMonth.set(m,[]);byMonth.get(m).push({...p,rows})}}
   for(const [m,entries] of byMonth){const k=key(platform,m),old=await readOne(k),map=new Map((old?.files||[]).map(f=>[f.name.toLowerCase(),f]));for(const f of entries)map.set(f.name.toLowerCase(),f);await writeOne({key:k,platform,ym:m,files:[...map.values()],savedAt:new Date().toISOString()})}
   const first=[...byMonth.keys()].sort()[0];if(first){year=+first.slice(0,4);month=+first.slice(5)}
-  await syncDB();syncSOP();notify('已导入 '+files.length+' 个文件 · '+pretty(total)+' 条记录'+(bad.length?' · '+bad.length+' 个文件需要检查':''),!!bad.length);go('overview');
+  await syncDB();syncSOP();lifecycleNeedsRefresh=true;notify('已导入 '+files.length+' 个文件 · '+pretty(total)+' 条记录'+(bad.length?' · '+bad.length+' 个文件需要检查':''),!!bad.length);go('overview');
  }catch(e){notify('上传失败：'+e.message,true)}finally{button.disabled=false;button.textContent='＋ 上传数据';$('fileInput').value=''}}
 function parseLaunches(raw){let out=[],seen=new Set();for(const line of raw.split(/[\r\n;；]+/)){const p=line.trim().split(/[,，\t]+/).map(x=>x.trim()).filter(Boolean);if(!p.length)continue;
  let match=p[0].match(/^(?:(头像框|派对背景|派对主题|资料卡|聊天气泡|座驾)\s*[:：]\s*)?(\d+)$/),id=match?.[2]||p[0].replace(/[^\d]/g,''),cat=match?.[1]?catOf(match[1]):'',launchDate='',extra=p.slice(1);
@@ -217,13 +226,13 @@ function syncSOP(){const all=load(LAUNCH_KEY),q=year+'-Q'+Math.ceil(month/3),sop
  for(const mon of qmonths){const m=year+'-'+String(mon).padStart(2,'0'),n=all[key(platform,m)]||(platform==='POPPO'&&m==='2026-10'?OCT_IDS.map(id=>({id,cat:''})):[]);const records=monthRec(m);
   for(const z of n){let cats=z.cat?[z.cat]:[...new Set(records.filter(r=>r.id===z.id&&CORE.includes(r.cat)).map(r=>r.cat))];for(const c of cats)if(CORE.includes(c)&&!current[c].includes(z.id))current[c].push(z.id)}}
  sop[k]=current;save(SOP_NEW,sop)}
-function saveLaunches(){const items=parseLaunches($('launchInput').value),store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);syncSOP();render();notify('新品名单已保存 · '+items.length+' 个')}
-async function removeFile(name){if(!confirm('确认移除 '+name+'？'))return;const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();notify('已移除文件')}
+function saveLaunches(){const items=parseLaunches($('launchInput').value),store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);syncSOP();lifecycleNeedsRefresh=true;render();notify('新品名单已保存 · '+items.length+' 个')}
+async function removeFile(name){if(!confirm('确认移除 '+name+'？'))return;const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();lifecycleNeedsRefresh=true;notify('已移除文件')}
 const download=(name,content,type)=>{const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 const csvEsc=v=>{let s=String(v??'');if(/^[=+@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
 function exportSummary(){const a=snapshot,w=a.whole,rows=[['月份','总销量','金币收益(美元)','荣誉券收益','成交SKU','新品SKU','新品销量','新品金币收益(美元)','新品荣誉券收益','新品销量贡献率'],[ym(),w.qty,(w.coin/1000).toFixed(2),w.ticket,a.skus.length,a.skus.filter(s=>s.new).length,w.newQty,(w.newCoin/1000).toFixed(2),w.newTicket,percent(w.newQty,w.qty)]];download('商城月报_'+ym()+'.csv','\uFEFF'+rows.map(x=>x.map(csvEsc).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
 async function backup(){const all=(await readAll()).filter(x=>x.platform===platform&&x.ym.startsWith(year+'-')).map(x=>({key:x.key,platform:x.platform,ym:x.ym,files:(x.files||[]).map(f=>({...f,blob:undefined}))}));const launches=load(LAUNCH_KEY),sop=load(SOP_NEW);download('商城数据备份_'+platform+'_'+year+'.json',JSON.stringify({format:'mall-dashboard-backup-v1',year,platform,months:all,launches,sop,createdAt:new Date().toISOString()}),'application/json;charset=utf-8');notify('已导出本年度备份')}
-async function restore(file){try{const j=JSON.parse(await file.text());if(j.format!=='mall-dashboard-backup-v1'||!Array.isArray(j.months))throw Error('备份文件格式不匹配');if(!confirm('导入备份会替换备份内同月份的数据，是否继续？'))return;for(const m of j.months){if(!m.key||!m.platform||!Array.isArray(m.files))continue;await writeOne({...m,files:m.files.map(f=>({...f,blob:undefined}))})}if(j.launches)save(LAUNCH_KEY,{...load(LAUNCH_KEY),...j.launches});if(j.sop)save(SOP_NEW,{...load(SOP_NEW),...j.sop});platform=j.platform||platform;year=+j.year||year;month=10;await syncDB();notify('备份恢复成功')}catch(e){notify('备份恢复失败：'+e.message,true)}}
+async function restore(file){try{const j=JSON.parse(await file.text());if(j.format!=='mall-dashboard-backup-v1'||!Array.isArray(j.months))throw Error('备份文件格式不匹配');if(!confirm('导入备份会替换备份内同月份的数据，是否继续？'))return;for(const m of j.months){if(!m.key||!m.platform||!Array.isArray(m.files))continue;await writeOne({...m,files:m.files.map(f=>({...f,blob:undefined}))})}if(j.launches)save(LAUNCH_KEY,{...load(LAUNCH_KEY),...j.launches});if(j.sop)save(SOP_NEW,{...load(SOP_NEW),...j.sop});platform=j.platform||platform;year=+j.year||year;month=10;await syncDB();lifecycleNeedsRefresh=true;notify('备份恢复成功')}catch(e){notify('备份恢复失败：'+e.message,true)}}
 function initEvents(){
  document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();go(b.dataset.page)}));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
@@ -236,7 +245,7 @@ function initEvents(){
  $('metricSwitch').addEventListener('click',e=>{const b=e.target.closest('[data-metric]');if(!b)return;metric=b.dataset.metric;setChosen('metricSwitch','data-metric',metric);renderOverview()});
  $('newMetricSwitch').addEventListener('click',e=>{const b=e.target.closest('[data-metric]');if(!b)return;newMetric=b.dataset.metric;setChosen('newMetricSwitch','data-metric',newMetric);renderNew()});
  $('designSort').addEventListener('click',e=>{const b=e.target.closest('[data-sort]');if(!b)return;designSort=b.dataset.sort;setChosen('designSort','data-sort',designSort);renderDesign()});
- $('newType').addEventListener('change',renderNew);$('newSearch').addEventListener('input',renderNew);
+ $('newType').addEventListener('change',renderNew);$('newTypeFilters').addEventListener('click',e=>{const b=e.target.closest('[data-new-type]');if(!b)return;$('newType').value=b.dataset.newType;renderNew()});$('newSearch').addEventListener('input',renderNew);
  $('monthGrid').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;month=+b.dataset.m;refreshSelections();render()});
  $('saveLaunch').addEventListener('click',saveLaunches);
  $('fileList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(b)removeFile(b.dataset.remove)});
