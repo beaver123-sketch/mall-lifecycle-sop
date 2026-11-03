@@ -30,8 +30,12 @@ jobs:
             const page=await browser.newPage();
             try{
               await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:30000});
-              const csv='日期,商品类型,商品名称,总销量,金币金额,荣誉券金额,金币销量,荣誉券销量\\n2026-10-10,头像框,Candy Cute Ghost（1386）,5,5000,0,5,0\\n2026-10-10,派对背景,蓝晶权冕（1398）,8,8000,0,8,0';
-              await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv.replaceAll('\\n','\n'))});
+              const csv=[
+                '日期,商品类型,商品名称,总销量,金币金额,荣誉券金额,金币销量,荣誉券销量',
+                '2026-10-10,头像框,Candy Cute Ghost（1386）,5,5000,0,5,0',
+                '2026-10-10,派对背景,蓝晶权冕（1398）,8,8000,0,8,0'
+              ].join(String.fromCharCode(10));
+              await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv,'utf8')});
               await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:20000});
               await page.locator('a[data-page="new"]').click();
               await page.locator('.category-tab[data-new-type="头像框"]').waitFor();
