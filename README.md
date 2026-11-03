@@ -29,3 +29,12 @@
 部署仍由 `.github/workflows/deploy-pages.yml` 自动完成。JS 基础语法由 `.github/workflows/validate-dashboard.yml` 校验。
 
 原始下架逻辑详情参见 [SOP.md](SOP.md)。
+
+
+## 云端共享升级（阶段进度）
+
+- Supabase **Mall Data Center** 项目已创建，区域 Singapore (`ap-southeast-1`)。
+- 数据表、匿名只读 RLS 和管理员专属写权限、私有订单存储桶已配置；项目已通过初步安全检查。
+- [首次管理员邮箱验证](cloud-admin.html)（线上入口：https://beaver123-sketch.github.io/mall-lifecycle-sop/cloud-admin.html）。此时仅建立登录身份，完成验证后仍须由数据库管理员把认证的用户 ID 录入 `mall_admins`。
+- **现有销售主站仍使用浏览器本地档案**。云端还没有公开分析数据；须完成管理员授权、历史月度档案迁移、对外读取页面集成、动态上下架云端汇总同步与端到端权限测试，才能宣布已实现共享。禁止把尚未发布的本地分析当作已对外共享。
+- 相关建表脚本见 [supabase/migrations/20261103_shared_mall_dashboard.sql](supabase/migrations/20261103_shared_mall_dashboard.sql)。
