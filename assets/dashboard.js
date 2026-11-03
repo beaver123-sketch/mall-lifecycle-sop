@@ -149,7 +149,7 @@ function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textConte
  const issues=issuesFor(a);$('issueCount').textContent=issues.length+' 项';
  $('issues').innerHTML=issues.map(x=>'<div class="issue">'+(x.severity==='error'?'<strong>需核对 · </strong>':'')+escapeHtml(x.text)+'</div>').join('')||'<div class="empty">未发现关键数据异常</div>';
 }
-function render(){snapshot=aggregate(ym());const a=snapshot;save(PERIOD_KEY,{year,month});syncMonthNavigators();document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
+function render(){snapshot=aggregate(ym());const a=snapshot;save(PERIOD_KEY,{year,month});syncMonthNavigators();document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.body.classList.toggle('analysis-month-view',['overview','new','design'].includes(view));document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
  $('crumb').textContent={overview:'经营总览',new:'新品分析',design:'设计方向',lifecycle:'动态上下架',data:'数据管理'}[view]||'经营总览';
  $('archiveCount').textContent=[...archive.values()].filter(v=>v.platform===platform&&v.files?.length).length+'个月';
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
