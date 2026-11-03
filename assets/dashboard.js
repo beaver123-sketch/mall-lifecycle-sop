@@ -162,7 +162,7 @@ function resizeLifecycleFrame(){
  const frame=$('lifecycleFrame');
  if(!frame||!frame.contentDocument)return;
  const doc=frame.contentDocument;
- const height=Math.max(660,doc.body?.scrollHeight||0,doc.body?.offsetHeight||0,doc.documentElement?.scrollHeight||0)+12;
+ const height=Math.max(660,doc.body?.scrollHeight||0,doc.body?.offsetHeight||0)+12;
  if(Math.abs(frame.offsetHeight-height)>5)frame.style.height=height+'px';
 }
 function bindLifecycleFrame(){
