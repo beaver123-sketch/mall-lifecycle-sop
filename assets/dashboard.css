@@ -55,3 +55,28 @@ body.show-lifecycle .content{max-width:1660px;padding-top:22px}
   .nav-link .nav-ico{width:19px;height:19px;flex-basis:19px}
   .nav-tools{margin:0 6px}
 }
+
+/* Consistent table typography, column alignment and spacing throughout analytics. */
+.content .panel .table-wrap table{width:100%;border-spacing:0}
+.content .panel .table-wrap thead th{padding:13px 13px 14px;color:#92a0b5;font-weight:650;line-height:1.45;vertical-align:middle}
+.content .panel .table-wrap tbody td{padding:13px;line-height:1.5;vertical-align:middle}
+.content .panel .table-wrap thead th.num,
+.content .panel .table-wrap tbody td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.content .panel .table-wrap thead th:first-child,
+.content .panel .table-wrap tbody td:first-child{padding-left:14px}
+.content .panel .table-wrap thead th:last-child,
+.content .panel .table-wrap tbody td:last-child{padding-right:14px}
+.content .panel .table-wrap thead th:not(.num){text-align:left}
+.content .panel .table-wrap .bar-cell{justify-content:flex-end;gap:10px;font-variant-numeric:tabular-nums}
+.content .panel .table-wrap .bar-track{flex:0 0 75px}
+#page-design .panel .table-wrap table{min-width:730px}
+#page-design #designCategoryRows td:last-child{font-variant-numeric:tabular-nums}
+#page-new .wide-table{min-width:880px}
+#page-new .wide-table tbody td{padding-top:15px;padding-bottom:15px}
+#page-new .wide-table .product-name{max-width:280px}
+#page-overview #rankingRows td:first-child .product-name{max-width:300px;vertical-align:middle}
+@media(max-width:650px){
+ .content .panel .table-wrap thead th{padding:11px 9px}
+ .content .panel .table-wrap tbody td{padding:11px 9px}
+ .content .panel .table-wrap thead th:last-child,.content .panel .table-wrap tbody td:last-child{padding-right:11px}
+}
