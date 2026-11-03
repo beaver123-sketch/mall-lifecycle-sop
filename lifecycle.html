@@ -619,6 +619,106 @@ header.page{margin-bottom:17px!important;padding-bottom:0!important;border-botto
 header.page h1{font-size:24px!important;letter-spacing:-.25px}
 #v2-summary-anchor .v2-section-title h2{font-size:16px}
 </style>
+
+<style id="unified-mall-lifecycle-ui">
+/* A consistent product-management view, keeping all legacy IDs and computations. */
+:root{--bg:#f7f9fc;--panel:#fff;--panel-2:#fbfcff;--border:#e9edf4;--text:#1b2640;--text-dim:#7c8ba2;--text-mute:#a3afc1;--accent:#4866d2}
+html{scroll-behavior:smooth}
+body{background:#f7f9fc!important;color:#1b2640;font-size:13px;line-height:1.55}
+.wrap{max-width:none!important}
+header.page{margin:0 0 25px!important;padding:0!important}
+header.page h1{font-size:26px!important;font-weight:750!important;line-height:1.25!important;color:#1b2640!important;margin:0!important}
+.v2-main{display:grid;gap:17px!important}
+.v2-panel{background:#fff!important;border:1px solid #edf0f5!important;border-radius:12px!important;box-shadow:0 5px 24px rgba(36,54,88,.025)!important;padding:22px 24px!important}
+.v2-panel .v2-section-title{margin-bottom:16px;gap:16px}
+.v2-panel h2{margin:0!important;font-size:15px!important;font-weight:720!important;color:#24334d!important;letter-spacing:-.1px}
+.v2-panel h3{font-size:13px!important;font-weight:700!important}
+.v2-muted,.v2-help,.v2-mini,.v2-foot{color:#9aa8bb!important;font-size:11px!important}
+#v2-upload{padding:19px 24px!important;margin-bottom:0!important}
+#v2-upload>.v2-section-title{display:none!important}
+#v2-upload .v23-toolbar{display:flex!important;justify-content:flex-start!important;align-items:flex-end!important;gap:15px!important;flex-wrap:wrap!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important}
+#v2-upload .v23-toolbar .v2-field{margin:0!important;flex:0 1 auto!important;min-width:0!important;gap:7px!important;font-weight:600!important;font-size:11px!important;color:#8b98aa!important}
+#v2-upload #v23Year{width:116px!important;min-width:116px!important}
+#v2-upload #v2Platform{width:138px!important;min-width:138px!important}
+#v2-upload #v2Quarter{width:190px!important;min-width:190px!important}
+#v2-upload .v23-toolbar input,#v2-upload .v23-toolbar select,
+.v2-filter input,.v2-filter select{height:37px!important;min-height:37px!important;box-sizing:border-box!important;border:1px solid #e2e9f2!important;border-radius:8px!important;background:#fff!important;color:#465a78!important;padding:0 12px!important;font-size:12px!important;outline:none!important;box-shadow:none!important}
+#v2-upload .v23-toolbar input:focus,#v2-upload .v23-toolbar select:focus,.v2-filter select:focus,.v2-filter input:focus{border-color:#9bb0e4!important}
+#v2-upload #v2Run{height:37px!important;min-height:37px!important;margin:0!important;width:108px!important;min-width:108px!important;padding:8px 12px!important}
+.v2-button{font-size:12px!important;font-weight:650!important;border-radius:8px!important;min-height:35px;padding:8px 13px!important;background:#4866d2!important;color:#fff!important;border-color:#4866d2!important;box-shadow:none!important}
+.v2-button.alt{background:#fff!important;color:#5b6b87!important;border-color:#e3e9f3!important}
+.v2-button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #a4b5eb!important;outline-offset:2px}
+.v2-button:not(:disabled):hover{filter:brightness(.96)}
+#v2Results{margin:5px 0 16px}
+.v2-summary{gap:12px!important}
+.v2-metric{background:#fbfcff!important;border:1px solid #edf1f7!important;border-radius:10px!important;padding:14px 16px!important;min-height:93px}
+.v2-metric small{font-size:11px!important;font-weight:550!important;color:#8f9caf!important}
+.v2-metric strong{font-size:24px!important;font-weight:750!important;color:#253957!important;line-height:1.2!important;margin:10px 0 0!important;font-variant-numeric:tabular-nums}
+#v2Quality{margin:13px 0 4px!important;border-radius:8px!important;padding:12px 15px!important;font-size:12px!important;line-height:1.55!important}
+#v2Quality.good{background:#f7fbfa!important;border:1px solid #e2f0ec!important;color:#5b847a!important}
+#v2Quality.danger{background:#fffaf6!important;border:1px solid #f0e1d3!important;color:#9a6a59!important}
+#v2Quality .v23-quality-summary{font-size:11px!important;line-height:1.5!important;color:#8d9db0!important;margin-top:6px!important}
+#v2Quality .v23-quality-footer{margin-top:6px!important;font-size:11px;color:#93a1b3}
+.v2-table-wrap{max-width:100%;overflow-x:auto;scrollbar-color:#d7e0ed transparent;scrollbar-width:thin}
+.v2-table{width:100%!important;border-collapse:collapse!important;font-size:12px!important;min-width:0!important;table-layout:auto}
+.v2-table thead th{font-weight:650!important;font-size:11px!important;letter-spacing:0!important;line-height:1.4!important;padding:13px 11px!important;border-bottom:1px solid #edf0f5!important;background:#fff!important;color:#8e9db3!important;white-space:nowrap!important;vertical-align:middle!important}
+.v2-table tbody td{font-size:12px!important;padding:13px 11px!important;border-bottom:1px solid #f0f2f6!important;line-height:1.55!important;color:#65758b!important;vertical-align:middle!important;font-variant-numeric:tabular-nums}
+.v2-table tbody tr:last-child td{border-bottom:0!important}
+.v2-table tbody tr:hover td{background:#fbfcff!important}
+.v2-table tbody td b,.v2-table tbody td strong{color:#33445e!important}
+#v2Overview{font-variant-numeric:tabular-nums}
+#v2-summary-anchor .v2-table{min-width:850px!important}
+#v2-summary-anchor .v2-table thead th:not(:first-child),
+#v2-summary-anchor .v2-table tbody td:not(:first-child){text-align:right!important}
+#v2-candidates .v2-table{min-width:1140px!important}
+#v2-candidates .v2-table th:nth-child(n+4):nth-child(-n+8),
+#v2-candidates .v2-table td:nth-child(n+4):nth-child(-n+8){text-align:right!important}
+#v2-candidates .v2-table th:last-child,#v2-candidates .v2-table td:last-child{text-align:center!important}
+#v2-observe .v2-table{min-width:830px!important}
+#v2-observe .v2-table th:nth-child(n+4):nth-child(-n+6),
+#v2-observe .v2-table td:nth-child(n+4):nth-child(-n+6){text-align:right!important}
+#v2-history .v2-table{min-width:530px!important}
+#v2-history .v2-table th:nth-child(3),#v2-history .v2-table td:nth-child(3),
+#v2-history .v2-table th:nth-child(4),#v2-history .v2-table td:nth-child(4){text-align:right!important}
+#v2-candidates .v2-filter,#v23-delisted .v2-filter{background:transparent!important;border:0!important;padding:1px 0!important;margin:7px 0 18px!important;gap:13px!important}
+.v2-filter label{font-size:11px!important;color:#8998ae!important;gap:8px!important}
+.v2-filter input[type=search]{width:184px!important}
+.v2-filter select{min-width:125px!important}
+#v2CandidateCaption,.v23-guidance,#v2-candidates .v2-foot,#v23-delisted .v2-muted,#v2-history .v2-muted{display:none!important}
+#v2-candidates .v2-section-title,#v23-delisted .v2-section-title{align-items:center!important}
+#v23DelistedCount{background:#f2f5fd!important;border:0!important;color:#647898!important;font-size:11px!important;padding:5px 9px!important;border-radius:6px!important}
+#v2History{min-height:36px}
+.v2-compact-history{padding:0!important}
+.v2-compact-history>summary{list-style:none;cursor:pointer;padding:21px 24px;color:#2d415c;font-size:15px;font-weight:700}
+.v2-compact-history>summary::-webkit-details-marker{display:none}
+.v2-compact-history>summary::after{content:'⌄';float:right;color:#9faebf}
+.v2-compact-history[open]>summary::after{transform:rotate(180deg)}
+.v2-compact-history>.v2-table-wrap{padding:0 24px 20px}
+.v23-guides{padding:0!important}
+.v23-guides>.v23-guide-title{padding:20px 24px!important;list-style:none!important;font-size:15px!important;color:#344562!important;font-weight:700!important}
+.v23-guides>.v23-guide-title::-webkit-details-marker{display:none}
+.v23-guides>.v23-guide-title:after{content:'⌄';color:#9faebf;margin-left:auto;font-size:16px}
+.v23-guides[open]>.v23-guide-title:after{transform:rotate(180deg)}
+.v23-guides>.v23-guide-inner{padding:17px 24px 24px!important}
+.v2-archive{margin:16px 0 0!important;border:1px solid #edf0f5!important;border-radius:10px!important;background:#fff!important}
+.v2-archive>summary{padding:14px 20px!important;color:#95a4b7!important;font-size:12px!important}
+@media(max-width:900px){
+ #v2-upload .v23-toolbar{gap:12px!important}
+ .v2-summary{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:650px){
+ header.page h1{font-size:23px!important}
+ .v2-panel{padding:17px!important}
+ #v2-upload{padding:17px!important}
+ #v2-upload .v23-toolbar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+ #v2-upload .v23-toolbar label{width:100%!important}
+ #v2-upload #v23Year,#v2-upload #v2Platform,#v2-upload #v2Quarter{width:100%!important;min-width:0!important}
+ #v2-upload #v2Run{width:100%!important;min-width:0!important}
+ .v2-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .v2-panel .v2-section-title{flex-wrap:wrap!important}
+ .v2-compact-history>summary,.v23-guides>.v23-guide-title{padding:17px!important}
+}
+</style>
 </head>
 <body>
 <a class="mall-dashboard-backlink" href="./" aria-label="返回商城数据中心">← 返回商城数据中心</a>
@@ -632,7 +732,7 @@ header.page h1{font-size:24px!important;letter-spacing:-.25px}
   <label class="v2-field">年份<input type="number" id="v23Year" min="2020" max="2100" value="2026" /></label>
   <label class="v2-field">平台<select id="v2Platform"><option value="POPPO">POPPO</option><option value="VONE">VONE</option></select></label>
   <label class="v2-field">分析季度<select id="v2Quarter"><option value="2026-Q1">2026年第1季度</option><option value="2026-Q2">2026年第2季度</option><option value="2026-Q3">2026年第3季度</option><option value="2026-Q4">2026年第4季度</option></select></label>
-  <button id="v2Run" class="v2-button" type="button">分析已保存季度数据</button>
+  <button id="v2Run" class="v2-button" type="button">更新分析</button>
  </div>
  <div class="v23-months" id="v23Months" aria-label="每月数据仓库"></div>
  <div class="v23-month-action">
@@ -657,30 +757,30 @@ header.page h1{font-size:24px!important;letter-spacing:-.25px}
  <div id="v2Status" class="v2-alert">请选择月份上传订单；数据保存后将显示“已上传”。至少保存季度对应3个月数据后才能生成正式下架名单。</div>
 </section>
 <section class="v2-panel" id="v2-summary-anchor">
- <div class="v2-section-title"><h2>02 / 各品类季度上下架汇总</h2><span class="v2-help">计划上新51 · 下架上限28 · 计划净新增≥23</span></div>
+ <div class="v2-section-title"><h2>季度经营与汰换概览</h2><span class="v2-help">计划上新51 · 下架上限28 · 计划净新增≥23</span></div>
  <div id="v2Results" hidden><div id="v2Summary" class="v2-summary"></div><div id="v2Quality" class="v2-alert"></div></div>
  <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>品类</th><th>季度上新计划</th><th>本季登记新品</th><th>季度下架上限</th><th>可参与评估SKU</th><th>两项后25%命中</th><th>本季度建议下架</th><th>计划净新增</th></tr></thead><tbody id="v2Overview">
  <tr><td>头像框</td><td>12</td><td>—</td><td>8</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>派对背景</td><td>12</td><td>—</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>资料卡</td><td>12</td><td>—</td><td>5</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>聊天气泡</td><td>12</td><td>—</td><td>4</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>座驾</td><td>3</td><td>—</td><td>1</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td><b>合计</b></td><td>51</td><td>—</td><td>28</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody></table></div>
 </section>
-<section class="v2-panel" id="v2-candidates"><div class="v2-section-title"><div><h2>03 / 本季度建议下架商品名单</h2><p class="v2-muted" id="v2CandidateCaption">上传本季度订单并登记上新ID后，自动输出具体SKU下架建议。</p></div><div class="v2-flex"><button class="v2-button" id="v2Download" type="button" disabled>导出下架CSV</button><button class="v2-button alt" id="v2Save" type="button" disabled>保存本期结果</button></div></div>
+<section class="v2-panel" id="v2-candidates"><div class="v2-section-title"><div><h2>建议下架商品</h2><span class="v2-muted" id="v2CandidateCaption" aria-live="polite"></span></div><div class="v2-flex"><button class="v2-button" id="v2Download" type="button" disabled>导出下架CSV</button><button class="v2-button alt" id="v2Save" type="button" disabled>保存本期结果</button></div></div>
  <div class="v2-filter"><label>品类<select id="v2FilterCat"><option value="">全部</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label><label>检索<input id="v2FilterText" type="search" placeholder="商品名称 / ID" /></label><span id="v2CandidateCount" class="v2-mini"></span></div>
  <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>建议</th><th>商品名称 / ID</th><th>品类</th><th>季度销量</th><th>成交天数 / 活跃度</th><th>销量排名</th><th>活跃度排名</th><th>最近30天</th><th>下架依据</th><th>已下架</th></tr></thead><tbody id="v2CandidateRows"><tr><td colspan="10" class="v2-empty">暂无季度订单数据</td></tr></tbody></table></div><p class="v2-foot">根据名单在商城后台手动下架。下架只停止新售卖，不影响已购权益；候选不足配额时不强制补满。</p>
 </section>
 <section class="v2-panel" id="v23-delisted">
- <div class="v2-section-title"><div><h2>04 / 已下架商品记录</h2><p class="v2-muted">在建议下架名单中勾选即可自动记录，不用重复填写商品信息。</p></div><div class="v2-flex"><span id="v23DelistedCount" class="v2-pill">已记录 0 个</span><button type="button" class="v2-button alt" id="v23ExportDelisted">导出记录CSV</button></div></div>
+ <div class="v2-section-title"><div><h2>已下架商品</h2></div><div class="v2-flex"><span id="v23DelistedCount" class="v2-pill">已记录 0 个</span><button type="button" class="v2-button alt" id="v23ExportDelisted">导出记录CSV</button></div></div>
  <div class="v23-guidance">在上方「建议下架商品名单」中勾选 <b>已下架</b>，商品ID、名称、品类和登记日期将自动保存到这里。已记录商品不会再次出现在下架候选中；操作错误可在本表撤销。</div>
  <div class="v2-filter"><label>品类 <select id="v23DelistFilter"><option value="">全部品类</option><option>头像框</option><option>派对背景</option><option>资料卡</option><option>聊天气泡</option><option>座驾</option></select></label><label>搜索 <input id="v23DelistSearch" type="search" placeholder="商品ID / 名称 / 备注" /></label></div>
  <div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>商品ID</th><th>商品名称</th><th>品类</th><th>下架日期</th><th>备注</th><th>操作</th></tr></thead><tbody id="v23DelistedRows"><tr><td colspan="6" class="v2-empty">暂无已下架记录</td></tr></tbody></table></div>
 </section>
-<section class="v2-panel" id="v2-observe"><div class="v2-section-title"><h2>05 / 持续观察商品</h2><span id="v2ObserveInfo" class="v2-help">暂无数据</span></div><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>分类</th><th>商品 / ID</th><th>品类</th><th>季度销量</th><th>成交天数</th><th>近30天</th><th>观察原因</th></tr></thead><tbody id="v2ObserveRows"><tr><td colspan="7">暂无数据</td></tr></tbody></table></div></section>
-<section class="v2-panel" id="v2-history"><h2>07 / 历史季度记录</h2><p class="v2-muted">本期分析和每季度填写的上新ID保存在当前浏览器。换设备或清除浏览器数据会丢失，请定期导出上新ID记录。</p><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>季度</th><th>平台</th><th>评估SKU</th><th>下架SKU</th><th>保存时间</th></tr></thead><tbody id="v2History"></tbody></table></div></section><details class="v2-panel v23-guides" id="v23-notes"><summary class="v23-guide-title">规则与说明 <span>下架判断逻辑 / 计算规则 / 数据问题</span></summary><div class="v23-guide-inner"><section class="v2-panel"><h2>下架判断流程</h2><div class="v2-rules">
+<section class="v2-panel" id="v2-observe"><div class="v2-section-title"><h2>持续观察</h2><span id="v2ObserveInfo" class="v2-help">暂无数据</span></div><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>分类</th><th>商品 / ID</th><th>品类</th><th>季度销量</th><th>成交天数</th><th>近30天</th><th>观察原因</th></tr></thead><tbody id="v2ObserveRows"><tr><td colspan="7">暂无数据</td></tr></tbody></table></div></section>
+<details class="v2-panel v2-compact-history" id="v2-history"><summary>历史季度记录</summary><p class="v2-muted">本期分析和每季度填写的上新ID保存在当前浏览器。换设备或清除浏览器数据会丢失，请定期导出上新ID记录。</p><div class="v2-table-wrap"><table class="v2-table"><thead><tr><th>季度</th><th>平台</th><th>评估SKU</th><th>下架SKU</th><th>保存时间</th></tr></thead><tbody id="v2History"></tbody></table></div></details><details class="v2-panel v23-guides" id="v23-notes"><summary class="v23-guide-title">计算规则与异常明细</summary><div class="v23-guide-inner"><section class="v2-panel"><h2>下架判断流程</h2><div class="v2-rules">
  <div class="v2-rule"><b>① 数据汇总</b><span>按平台、品类、商品ID汇总完整季度，不同购买期限合并。</span></div>
  <div class="v2-rule"><b>② 两项后25%</b><span>季度销量和成交活跃度分别排名，双重命中才进入低效池。</span></div>
  <div class="v2-rule"><b>③ 排除需求回升</b><span>近30天≥5件且较前60天月均增长≥20%，暂不下架。</span></div>
  <div class="v2-rule"><b>④ 数量上限</b><span>成交天数更少、季度销量更低者优先，按各品类季度上限截取。</span></div></div><p class="v2-foot">默认订单中的商品为当前在售商品；本季度及上季度已登记的新品不参与下架。未登记的历史上新ID无法仅凭订单日期准确识别，缺失订单的零销量商品也无法计算。</p>
 </section>
 <details class="v23-subguide" id="v2-issues"><summary style="font-weight:650;color:#345678;cursor:pointer">查看数据质量问题（重复、冲突、来源行号）</summary><div style="padding-top:13px"><div class="v2-section-title"><h3>异常记录定位</h3><div class="v2-flex"><span class="v2-mini" id="v2ErrorInfo"></span><button class="v2-button alt" id="v2DownloadIssues" type="button">导出异常CSV</button></div></div><div class="v2-table-wrap v2-errorlist"><table class="v2-table"><thead><tr><th>级别</th><th>问题</th><th>文件 / 行号</th><th>描述</th></tr></thead><tbody id="v2ErrorRows"></tbody></table></div><p class="v2-muted">没有成交记录的日期，不等于已经证明漏导；需结合后台导出范围判断。</p></div></details>
-<section class="v23-subguide" id="v2-sop"><h2>06 / 固定计算规则及数量配额</h2><div class="v2-grid">
+<section class="v23-subguide" id="v2-sop"><h2>配额与计算口径</h2><div class="v2-grid">
  <div class="v2-table-wrap"><table class="v2-table" style="min-width:450px"><thead><tr><th>品类</th><th>每月上新</th><th>季度上新</th><th>季度下架上限</th></tr></thead><tbody><tr><td>头像框</td><td>4</td><td>12</td><td>8</td></tr><tr><td>派对背景</td><td>4</td><td>12</td><td>10</td></tr><tr><td>资料卡</td><td>4</td><td>12</td><td>5</td></tr><tr><td>聊天气泡</td><td>4</td><td>12</td><td>4</td></tr><tr><td>座驾</td><td>1</td><td>3</td><td>1</td></tr><tr><td><b>合计</b></td><td>17</td><td>51</td><td>28</td></tr></tbody></table></div>
  <div class="v2-stack"><p class="v2-muted"><b>成交活跃度</b> = 有成交天数 ÷ 有效可售天数。</p><p class="v2-muted"><b>新品保护</b> = 本季度及上季度登记的上新商品ID不参与常规下架排名（未登记的上新无法凭订单识别）。</p><p class="v2-muted"><b>低效条件</b> = 季度销量后25% + 成交活跃度后25%同时命中。</p><p class="v2-muted"><b>需求回升</b> = 最近30天至少5件，且较前60天月均增长≥20%。</p><p class="v2-muted"><b>排序</b> = 成交天数越少越优先，其次季度销量越低越优先。</p><p class="v2-muted"><b>季度净新增</b> = 上新数量 − 下架数量；下架限额不是必须完成的任务。</p><p class="v2-muted">靓号不参与本规则；其他特殊商品若混在常规订单中，需在本季度上新ID列表中之外另行剔除，订单本身无法识别特殊权益。</p></div></div></section>
 </div></details></main><details class="v2-archive"><summary>历史2026年4—6月数据与旧版复核台（不参与新季度计算）</summary><div><section class="sop-block" id="review"><h2 class="sop-title">04 / 历史商品人工复核台</h2>
