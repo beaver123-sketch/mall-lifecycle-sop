@@ -147,3 +147,33 @@ input[type=search]:focus,textarea:focus,select:focus{outline:none;border-color:#
  .two-cols{gap:14px}
  .view#page-design .panel+.panel{margin-top:14px}
 }
+
+/* Archive month navigation: shared period across overview / new products / design. */
+.page-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.month-navigator{display:inline-flex;align-items:center;gap:0;height:36px;border:1px solid #e2e8f2;background:#fff;border-radius:9px;overflow:hidden;flex:none}
+.month-arrow{display:grid;place-items:center;width:35px;height:34px;padding:0;border:0;background:transparent;color:#6e809c;font-size:23px;font-weight:350;line-height:1;transition:background .12s}
+.month-arrow:hover:not(:disabled){background:#f1f4fb;color:#4261c9}
+.month-arrow:disabled{cursor:not-allowed;color:#c6d0df}
+.month-picker{appearance:none;-webkit-appearance:none;max-width:205px;width:155px;height:34px;border:0;border-left:1px solid #f0f2f7;border-right:1px solid #f0f2f7;color:#42536f;background:#fff;outline:0;padding:0 25px 0 12px;font-size:12px;font-weight:660;cursor:pointer;text-align:center;text-align-last:center;letter-spacing:.05px}
+.month-navigator:has(.month-picker:focus-visible){outline:2px solid #9eaee7;outline-offset:2px}
+.month-navigator:has(.month-picker:focus){border-color:#b4c1e6}
+.month-arrow:focus-visible{outline:2px solid #98ace5;outline-offset:-2px}
+body.analysis-month-view .topbar #year,body.analysis-month-view .topbar #month{display:none}
+body.analysis-month-view .page-head .page-date{display:none}
+body.analysis-month-view .page-head{margin-bottom:22px}
+.month-empty[hidden]{display:none!important}
+.month-empty{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;min-height:146px;padding:22px;border:1px dashed #d9e1ed;background:#fff;border-radius:12px;color:#8997ad;font-size:13px}
+.month-empty button{border:1px solid #e2e8f2;background:#fff;border-radius:8px;color:#516cc0;font-size:12px;padding:7px 11px;cursor:pointer}
+.month-empty button:hover{background:#f4f7ff;border-color:#b7c6ea}
+.view.month-no-data > :not(.page-head):not(.month-empty){display:none!important}
+@media(max-width:900px){
+ .page-head-actions{gap:8px}
+ .month-picker{width:139px}
+}
+@media(max-width:650px){
+ .page-head{align-items:flex-start;flex-wrap:wrap}
+ .page-head-actions{width:100%;justify-content:flex-start;gap:9px}
+ .month-navigator{height:35px}
+ .month-arrow,.month-picker{height:33px}
+ .month-empty{min-height:120px}
+}
