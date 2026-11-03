@@ -38,6 +38,30 @@ jobs:
               ].join(String.fromCharCode(10));
               await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv,'utf8')});
               await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:20000});
+              // Month archive navigation shared by overview, new arrivals and design.
+              if(await page.locator('#page-overview .month-picker').inputValue()!=='2026-10')throw Error('Overview initial month should match imported data');
+              await page.locator('#page-overview [data-month-step="1"]').click();
+              await page.waitForFunction(()=>
+                document.querySelector('#month')?.value==='11' &&
+                document.querySelector('#page-overview')?.classList.contains('month-no-data'),null,{timeout:15000});
+              if(!(await page.locator('#page-overview .month-empty').isVisible()))throw Error('Missing months need explicit empty state');
+              if(await page.locator('#overviewMetrics').isVisible())throw Error('Missing months must not show stale metrics');
+              await page.locator('a[data-page="new"]').click();
+              if(await page.locator('#page-new .month-picker').inputValue()!=='2026-11')throw Error('Month did not persist into new-arrival page');
+              if(!(await page.locator('#page-new .month-empty').isVisible()))throw Error('Missing-month new-arrival notice not visible');
+              await page.locator('a[data-page="design"]').click();
+              if(await page.locator('#page-design .month-picker').inputValue()!=='2026-11')throw Error('Month did not persist into design page');
+              if(!(await page.locator('#page-design .month-empty').isVisible()))throw Error('Design page showed data for wrong month');
+              await page.reload({waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
+              if(await page.locator('#page-design .month-picker').inputValue()!=='2026-11')throw Error('Selected archive month did not survive reload');
+              await page.locator('#page-design .month-picker').selectOption('2026-10');
+              if(await page.locator('#month').inputValue()!=='10')throw Error('Topbar year/month controls out of sync');
+              await page.locator('a[data-page="overview"]').click();
+              if(await page.locator('#page-overview .month-picker').inputValue()!=='2026-10')throw Error('Month dropdown selection did not persist across tabs');
+              if(!(await page.locator('#overviewMetrics').innerText()).includes('13'))throw Error('Imported month failed to restore its data');
+              if(!(await page.locator('#overviewMetrics').isVisible()))throw Error('Archived month metrics did not reappear');
+              if(await page.locator('body .topbar #month').isVisible())throw Error('Duplicate month picker in analysis topbar');
               // Numeric columns should share their alignment between headers and rows.
               const alignmentCheck=async(selector)=>{
                 return page.locator(selector).evaluate(table=>{
