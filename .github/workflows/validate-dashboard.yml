@@ -109,8 +109,16 @@ jobs:
               await page.waitForFunction(()=>
                 location.hash==='#data' && !document.querySelector('#page-data').hidden &&
                 document.querySelector('a[data-page="data"]').classList.contains('active'),null,{timeout:15000});
+              let confirmDialogs=0;
+              page.on('dialog',async dialog=>{confirmDialogs++;await dialog.dismiss()});
+              const beforeRemoval=await page.locator('#fileList [data-remove]').count();
+              if(beforeRemoval<1)throw Error('Test upload did not produce a removable file');
+              await page.locator('#fileList [data-remove]').first().click();
+              await page.waitForFunction(()=>document.querySelectorAll('#fileList [data-remove]').length===0,null,{timeout:15000});
+              if(confirmDialogs)throw Error('One-click removal unexpectedly displayed a browser dialog');
+              if((await page.locator('#dataDetails').innerText()).includes('2 条有效记录'))throw Error('Removing the only file did not refresh the report');
               await page.locator('a[data-page="overview"]').click();
-              console.log('PASS: compact sidebar navigation, bottom data tab, lifecycle and overview switching.');
+              console.log('PASS: no-dialog file removal, report refresh and five-tab navigation.');
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
