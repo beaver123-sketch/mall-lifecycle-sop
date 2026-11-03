@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
-<link rel="stylesheet" href="assets/dashboard.css?v=20261103-month-history-v1">
+<link rel="stylesheet" href="assets/dashboard.css?v=20261103-bulk-remove-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="assets/dashboard.js?v=20261103-month-history-v1" defer></script>
+<script src="assets/dashboard.js?v=20261103-bulk-remove-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -88,7 +88,7 @@
         <div class="page-head"><div><h1>数据管理</h1><div class="page-date" id="dataPeriod"></div></div><div class="head-actions"><button class="button light" id="backup" type="button">导出备份</button><button class="button light" id="restoreButton" type="button">恢复备份</button></div></div>
         <div class="two-cols data-cols">
           <div class="panel">
-            <div class="panel-head"><h2>订单数据</h2></div>
+            <div class="panel-head"><h2>订单数据</h2><button class="button clear-month" id="clearMonthFiles" type="button" disabled title="清空当前月份上传的所有文件">清空本月文件</button></div>
             <div id="dropzone" class="upload-zone" tabindex="0" role="button"><span class="upload-symbol">↑</span><strong>上传商城订单文件</strong><span>Excel / CSV · 支持多文件</span><button class="button primary" id="uploadButton" type="button">选择文件</button></div>
             <div class="file-list" id="fileList"></div>
           </div>
