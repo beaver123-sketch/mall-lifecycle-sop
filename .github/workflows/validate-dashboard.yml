@@ -18,3 +18,30 @@ jobs:
           test -s lifecycle.html
           test -s assets/dashboard.css
           grep -q '商城数据中心' index.html
+      - name: Install browser test client
+        run: npm install --no-save --no-package-lock playwright-core@1.55.1
+      - name: Verify tab switching in browser
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/mall-ui-test.log 2>&1 &
+          node <<'JS'
+          const {chromium}=require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+            const page=await browser.newPage();
+            try{
+              await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:30000});
+              await page.locator('a[data-page="lifecycle"]').click({timeout:20000});
+              await page.waitForFunction(()=>
+                location.hash==='#lifecycle' &&
+                document.querySelector('a[data-page="lifecycle"]').classList.contains('active') &&
+                !document.querySelector('#page-lifecycle').hidden,
+                null,{timeout:20000});
+              await page.frameLocator('#lifecycleFrame').locator('header.page h1').waitFor({timeout:20000});
+              await page.locator('a[data-page="overview"]').click();
+              await page.waitForFunction(()=>
+                location.hash==='#overview' && !document.querySelector('#page-overview').hidden,
+                null,{timeout:15000});
+              console.log('PASS: lifecycle tab opens in-place and returns to overview.');
+            }finally{await browser.close()}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
