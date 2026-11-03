@@ -144,14 +144,46 @@ function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textConte
  const issues=issuesFor(a);$('issueCount').textContent=issues.length+' 项';
  $('issues').innerHTML=issues.map(x=>'<div class="issue">'+(x.severity==='error'?'<strong>需核对 · </strong>':'')+escapeHtml(x.text)+'</div>').join('')||'<div class="empty">未发现关键数据异常</div>';
 }
-function render(){snapshot=aggregate(ym());const a=snapshot;document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
- $('crumb').textContent={overview:'经营总览',new:'新品分析',design:'设计方向',data:'数据管理'}[view]||'经营总览';
+function render(){snapshot=aggregate(ym());const a=snapshot;document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
+ $('crumb').textContent={overview:'经营总览',new:'新品分析',design:'设计方向',lifecycle:'动态上下架',data:'数据管理'}[view]||'经营总览';
  $('archiveCount').textContent=[...archive.values()].filter(v=>v.platform===platform&&v.files?.length).length+'个月';
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
  alertMsg(hasProblems?'当前月份存在待核验数据，请前往「数据管理」查看异常。':'');
  renderOverview();renderNew();renderDesign();renderData();
+ if(view==='lifecycle')openLifecycleTab();
 }
-function go(p){view=['overview','new','design','data'].includes(p)?p:'overview';history.replaceState(null,'','#'+view);render();window.scrollTo({top:0,behavior:'instant'})}
+function openLifecycleTab(){
+ const frame=$('lifecycleFrame');
+ if(!frame.getAttribute('src'))frame.setAttribute('src','lifecycle.html');
+ else if(frame.contentDocument)requestAnimationFrame(resizeLifecycleFrame);
+}
+let lifecycleObserver=null;
+function resizeLifecycleFrame(){
+ const frame=$('lifecycleFrame');
+ if(!frame||!frame.contentDocument)return;
+ const doc=frame.contentDocument;
+ const height=Math.max(660,doc.body?.scrollHeight||0,doc.body?.offsetHeight||0,doc.documentElement?.scrollHeight||0)+12;
+ if(Math.abs(frame.offsetHeight-height)>5)frame.style.height=height+'px';
+}
+function bindLifecycleFrame(){
+ const frame=$('lifecycleFrame');
+ frame.addEventListener('load',()=>{
+  try{
+   const doc=frame.contentDocument;
+   if(!doc)return;
+   const style=doc.createElement('style');
+   style.textContent='.mall-dashboard-backlink{display:none!important}body{padding:8px 3px 30px!important}.wrap{max-width:none!important}';
+   doc.head.appendChild(style);
+   if(lifecycleObserver)lifecycleObserver.disconnect();
+   lifecycleObserver=new ResizeObserver(()=>requestAnimationFrame(resizeLifecycleFrame));
+   lifecycleObserver.observe(doc.body);
+   requestAnimationFrame(resizeLifecycleFrame);
+  }catch(err){console.warn('无法自动调整上下架页签高度',err)}
+ });
+ window.addEventListener('resize',()=>{if(view==='lifecycle')requestAnimationFrame(resizeLifecycleFrame)});
+}
+
+function go(p){view=['overview','new','design','lifecycle','data'].includes(p)?p:'overview';history.replaceState(null,'','#'+view);render();window.scrollTo({top:0,behavior:'instant'})}
 function refreshSelections(){const y=$('year');if(!y.options.length)for(let v=2024;v<=2030;v++)y.add(new Option(v+'年',v));y.value=year;
  const mo=$('month');if(!mo.options.length)for(let v=1;v<=12;v++)mo.add(new Option(v+'月',v));mo.value=month;
  $('platform').value=platform}
@@ -213,10 +245,10 @@ function initEvents(){
  $('backup').addEventListener('click',()=>backup().catch(e=>notify(e.message,true)));
  $('restoreButton').addEventListener('click',()=>$('backupInput').click());
  $('backupInput').addEventListener('change',e=>{const f=e.target.files[0];if(f)restore(f);e.target.value=''});
- $('goLifecycle').addEventListener('click',()=>location.href='lifecycle.html');
- window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(['overview','new','design','data'].includes(p))go(p)});
+ $('goLifecycle').addEventListener('click',()=>go('lifecycle'));
+ window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))go(p)});
 }
 function setChosen(parent,attr,val){$(parent).querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b.getAttribute(attr)===val))}
-async function init(){const p=location.hash.slice(1);if(['overview','new','design','data'].includes(p))view=p;initEvents();db=await openDB();await syncDB()}
+async function init(){const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();initEvents();db=await openDB();await syncDB()}
 init().catch(e=>{alertMsg('无法使用浏览器数据存储：'+e.message);notify('页面初始化失败',true)});
 })();
