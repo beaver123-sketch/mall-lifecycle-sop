@@ -362,7 +362,7 @@ async function parse(file){const result={name:file.name,size:file.size,rows:[],i
  return result}
 async function importFiles(fs){if(startupPromise)await startupPromise;const files=fs.filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!files.length){notify('请选择 Excel 或 CSV 文件',true);return}
  const button=$('headerUpload');button.disabled=true;button.textContent='正在解析…';let total=0,bad=[];
- try{const parsed=[];for(const f of files){const p=await parse(f);parsed.push(p);total+=p.rows.length;if(!p.rows.length)bad.push(f.name)}
+ try{const parsed=[];for(const f of files){const p=await parse(f);if(cloudActive){if(!cloudAdmin||cloudOffline)throw Error('请先通过云端管理员验证');p.storagePath=await window.MallCloud.uploadSource(f,platform)}parsed.push(p);total+=p.rows.length;if(!p.rows.length)bad.push(f.name)}
   const byMonth=new Map();
   for(const p of parsed){const groups=new Map();for(const row of p.rows){const m=row.date.slice(0,7);if(!groups.has(m))groups.set(m,[]);groups.get(m).push(row)}
    if(!groups.size)groups.set(ym(),[]);
@@ -380,25 +380,54 @@ function syncSOP(){const all=load(LAUNCH_KEY),q=year+'-Q'+Math.ceil(month/3),sop
  for(const mon of qmonths){const m=year+'-'+String(mon).padStart(2,'0'),n=all[key(platform,m)]||(platform==='POPPO'&&m==='2026-10'?OCT_IDS.map(id=>({id,cat:''})):[]);const records=monthRec(m);
   for(const z of n){let cats=z.cat?[z.cat]:[...new Set(records.filter(r=>r.id===z.id&&CORE.includes(r.cat)).map(r=>r.cat))];for(const c of cats)if(CORE.includes(c)&&!current[c].includes(z.id))current[c].push(z.id)}}
  sop[k]=current;save(SOP_NEW,sop)}
-function saveLaunches(){const items=parseLaunches($('launchInput').value),store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);syncSOP();lifecycleNeedsRefresh=true;render();notify('新品名单已保存 · '+items.length+' 个')}
-async function removeFile(name){const k=key(platform,ym()),old=await readOne(k);if(!old)return;const files=(old.files||[]).filter(f=>f.name!==name);if(files.length===(old.files||[]).length)return;if(files.length)await writeOne({...old,files});else await deleteOne(k);await syncDB();lifecycleNeedsRefresh=true;notify('已移除：'+name)}
+async function saveLaunches(){
+ const items=parseLaunches($('launchInput').value);
+ if(cloudActive){
+  if(!cloudAdmin||cloudOffline){notify('需要管理员权限才能保存新品名单',true);return}
+  const entry=archiveEntry(ym())||emptyArchive(platform,ym());
+  try{await writeOne({...entry,launches:items});await syncDB();syncSOP();lifecycleNeedsRefresh=true;notify('已同步云端新品名单 · '+items.length+' 个')}
+  catch(err){notify('保存云端新品名单失败：'+err.message,true)}
+  return;
+ }
+ const store=load(LAUNCH_KEY);store[key(platform,ym())]=items;save(LAUNCH_KEY,store);
+ syncSOP();lifecycleNeedsRefresh=true;render();notify('新品名单已保存 · '+items.length+' 个');
+}
+async function pruneSourcePaths(removedFiles){
+ if(!cloudActive||!cloudAdmin)return;
+ const used=new Set([...archive.values()].flatMap(e=>(e.files||[]).map(f=>f.storagePath).filter(Boolean)));
+ const paths=removedFiles.map(f=>f.storagePath).filter(p=>p&&!used.has(p));
+ if(paths.length)try{await window.MallCloud.removeSources(paths)}catch(err){notify('销售数据已更新，但原始文件清理失败：'+err.message,true)}
+}
+async function removeFile(name){
+ if(cloudActive&&!cloudAdmin)throw Error('仅管理员可移除文件');
+ const k=key(platform,ym()),old=await readOne(k);
+ if(!old)return;
+ const removed=(old.files||[]).filter(f=>f.name===name);
+ const files=(old.files||[]).filter(f=>f.name!==name);
+ if(!removed.length)return;
+ if(files.length)await writeOne({...old,files});else await deleteOne(k);
+ await pruneSourcePaths(removed);
+ await syncDB();lifecycleNeedsRefresh=true;notify('已移除并同步云端：'+name);
+}
 async function clearMonthFiles(){
  const btn=$('clearMonthFiles'),selected=ym(),selectedPlatform=platform,k=key(selectedPlatform,selected);
  if(btn.disabled)return;btn.disabled=true;
  try{
   const entry=await readOne(k),count=(entry?.files||[]).length;
   if(!count){btn.disabled=true;return}
+  if(cloudActive&&!cloudAdmin)throw Error('仅管理员可清空文件');
   await deleteOne(k);
+  await pruneSourcePaths(entry.files||[]);
   lifecycleNeedsRefresh=true;
   await syncDB();
-  notify('已清空'+selected.replace('-','年')+'月的 '+count+' 个文件');
+  notify('已清空并同步云端：'+selected.replace('-','年')+'月的 '+count+' 个文件');
  }catch(err){btn.disabled=false;notify('清空失败：'+err.message,true)}
 }
 const download=(name,content,type)=>{const blob=new Blob([content],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 const csvEsc=v=>{let s=String(v??'');if(/^[=+@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
 function exportSummary(){const a=snapshot,w=a.whole,rows=[['月份','总销量','金币收益(美元)','荣誉券收益','成交SKU','新品SKU','新品销量','新品金币收益(美元)','新品荣誉券收益','新品销量贡献率'],[ym(),w.qty,(w.coin/1000).toFixed(2),w.ticket,a.skus.length,a.skus.filter(s=>s.new).length,w.newQty,(w.newCoin/1000).toFixed(2),w.newTicket,percent(w.newQty,w.qty)]];download('商城月报_'+ym()+'.csv','\uFEFF'+rows.map(x=>x.map(csvEsc).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
-async function backup(){const all=(await readAll()).filter(x=>x.platform===platform&&x.ym.startsWith(year+'-')).map(x=>({key:x.key,platform:x.platform,ym:x.ym,files:(x.files||[]).map(f=>({...f,blob:undefined}))}));const launches=load(LAUNCH_KEY),sop=load(SOP_NEW);download('商城数据备份_'+platform+'_'+year+'.json',JSON.stringify({format:'mall-dashboard-backup-v1',year,platform,months:all,launches,sop,createdAt:new Date().toISOString()}),'application/json;charset=utf-8');notify('已导出本年度备份')}
-async function restore(file){try{const j=JSON.parse(await file.text());if(j.format!=='mall-dashboard-backup-v1'||!Array.isArray(j.months))throw Error('备份文件格式不匹配');if(!confirm('导入备份会替换备份内同月份的数据，是否继续？'))return;for(const m of j.months){if(!m.key||!m.platform||!Array.isArray(m.files))continue;await writeOne({...m,files:m.files.map(f=>({...f,blob:undefined}))})}if(j.launches)save(LAUNCH_KEY,{...load(LAUNCH_KEY),...j.launches});if(j.sop)save(SOP_NEW,{...load(SOP_NEW),...j.sop});platform=j.platform||platform;year=+j.year||year;month=10;await syncDB();lifecycleNeedsRefresh=true;notify('备份恢复成功')}catch(e){notify('备份恢复失败：'+e.message,true)}}
+async function backup(){const all=(await readAll()).filter(x=>x.platform===platform&&x.ym.startsWith(year+'-')).map(x=>({key:x.key,platform:x.platform,ym:x.ym,files:(x.files||[]).map(f=>({...f,blob:undefined}))}));const launches=cloudActive?Object.fromEntries(all.filter(x=>x.launches).map(x=>[x.key,x.launches])):load(LAUNCH_KEY),sop=load(SOP_NEW);download('商城数据备份_'+platform+'_'+year+'.json',JSON.stringify({format:'mall-dashboard-backup-v1',year,platform,months:all,launches,sop,createdAt:new Date().toISOString()}),'application/json;charset=utf-8');notify('已导出本年度备份')}
+async function restore(file){try{const j=JSON.parse(await file.text());if(j.format!=='mall-dashboard-backup-v1'||!Array.isArray(j.months))throw Error('备份文件格式不匹配');if(!confirm('导入备份会替换备份内同月份的数据，是否继续？'))return;for(const m of j.months){if(!m.key||!m.platform||!Array.isArray(m.files))continue;await writeOne({...m,launches:j.launches?.[m.key]??m.launches??initialLaunches(m.platform,m.ym),files:m.files.map(f=>({...f,blob:undefined}))})}if(j.launches&&!cloudActive)save(LAUNCH_KEY,{...load(LAUNCH_KEY),...j.launches});if(j.sop)save(SOP_NEW,{...load(SOP_NEW),...j.sop});platform=j.platform||platform;year=+j.year||year;month=10;await syncDB();lifecycleNeedsRefresh=true;notify('备份恢复成功')}catch(e){notify('备份恢复失败：'+e.message,true)}}
 function initEvents(){
  document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();go(b.dataset.page)}));
  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
@@ -418,6 +447,7 @@ function initEvents(){
  $('saveLaunch').addEventListener('click',saveLaunches);
  $('fileList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b||b.disabled)return;b.disabled=true;removeFile(b.dataset.remove).catch(err=>{b.disabled=false;notify('移除失败：'+err.message,true)})});
  $('clearMonthFiles').addEventListener('click',clearMonthFiles);
+ $('syncLocalCloud').addEventListener('click',syncLocalHistory);
  $('exportSummary').addEventListener('click',exportSummary);
  $('backup').addEventListener('click',()=>backup().catch(e=>notify(e.message,true)));
  $('restoreButton').addEventListener('click',()=>$('backupInput').click());
@@ -426,6 +456,20 @@ function initEvents(){
  window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))go(p)});
 }
 function setChosen(parent,attr,val){$(parent).querySelectorAll('button').forEach(b=>b.classList.toggle('chosen',b.getAttribute(attr)===val))}
-async function init(){const period=load(PERIOD_KEY);if(Number.isInteger(period.year)&&period.year>=2020&&period.year<=2100)year=period.year;if(Number.isInteger(period.month)&&period.month>=1&&period.month<=12)month=period.month;const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;bindLifecycleFrame();startupPromise=openDB().then(async connection=>{db=connection;await syncDB();document.documentElement.dataset.mallReady='true'});initEvents();await startupPromise}
+async function init(){
+ const period=load(PERIOD_KEY);if(Number.isInteger(period.year)&&period.year>=2020&&period.year<=2100)year=period.year;
+ if(Number.isInteger(period.month)&&period.month>=1&&period.month<=12)month=period.month;
+ const p=location.hash.slice(1);if(['overview','new','design','lifecycle','data'].includes(p))view=p;
+ bindLifecycleFrame();initEvents();
+ startupPromise=openDB().then(async connection=>{
+  db=connection;
+  localHistoryCount=(await localReadAll()).filter(x=>x.files?.length).length;
+  cloudActive=true;
+  try{const data=await window.MallCloud.init();cloudAdmin=data.isAdmin;await refreshCloudData()}
+  catch(err){cloudOffline=err.message||String(err);archive=new Map();cloudReports=new Map();cloudAdmin=false}
+  refreshSelections();render();document.documentElement.dataset.mallReady='true';
+ });
+ await startupPromise;
+}
 init().catch(e=>{alertMsg('无法使用浏览器数据存储：'+e.message);notify('页面初始化失败',true)});
 })();
