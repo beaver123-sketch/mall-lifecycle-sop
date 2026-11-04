@@ -198,7 +198,7 @@ jobs:
               await guest.route('**/assets/cloud-layer.js*',route=>route.fulfill({status:200,contentType:'text/javascript',body:cloudStub(false)}));
               await guest.goto('http://127.0.0.1:8765/#overview',{waitUntil:'domcontentloaded',timeout:30000});
               await guest.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
-              await guest.locator('#month').selectOption('9');
+              await guest.locator('#page-overview .month-picker').selectOption('2026-09');
               if(!(await guest.locator('#overviewMetrics').innerText()).includes('3'))throw Error('Guest cannot see published month report');
               if(await guest.locator('#headerUpload').isVisible())throw Error('Guest can see upload button');
               await guest.locator('a[data-page="data"]').click();
