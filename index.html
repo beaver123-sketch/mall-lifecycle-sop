@@ -6,10 +6,12 @@
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
 <link rel="stylesheet" href="assets/dashboard.css?v=20261104-cloud-v1">
+<link rel="stylesheet" href="assets/design-direction.css?v=20261104-design-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0" defer></script>
 <script src="assets/cloud-layer.js?v=20261104-cloud-v1" defer></script>
-<script src="assets/dashboard.js?v=20261104-cloud-v1" defer></script>
+<script src="assets/dashboard.js?v=20261104-design-v1" defer></script>
+<script src="assets/design-direction.js?v=20261104-design-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -77,6 +79,41 @@
       </section>
       <section class="view" id="page-design" hidden>
         <div class="page-head"><div><h1>设计方向</h1><div class="page-date" id="designPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
+        <section class="panel dd-panel dd-recommend-panel" aria-label="商城设计方向智能推荐">
+          <div class="panel-head"><div><div class="dd-title-line"><h2>商城设计方向智能推荐</h2><span class="dd-version">设计提需</span></div><div class="subtle">明确名称 · 核心关键词 · 设计构想 · 历史销售依据</div></div><span class="dd-muted" id="designLabelState">正在读取设计标签…</span></div>
+          <div class="dd-controls">
+            <label>商品品类<select id="designRecommendCat"><option value="派对背景" selected>派对背景</option><option value="头像框">头像框</option><option value="资料卡">资料卡</option><option value="聊天气泡">聊天气泡</option><option value="座驾">座驾</option><option value="全部">全部品类</option></select></label>
+            <label>设计数量<select id="designRecommendCount"><option value="2">2 款</option><option value="3">3 款</option><option value="4" selected>4 款</option><option value="5">5 款</option><option value="6">6 款</option><option value="8">8 款</option></select></label>
+            <div class="dd-control-actions"><button type="button" class="button light" id="designRegenerate">↻ 换一批设计</button><button type="button" class="button primary" id="designExportBrief">导出设计提需 CSV</button></div>
+          </div>
+          <div class="dd-summary" id="designRecommendNotice">推荐结果将结合已标注商品的真实销售数据；尚无数据支持的创意将明确标记。</div>
+          <div class="dd-cards" id="designRecommendCards"></div>
+          <p class="dd-footnote">说明：推荐名称和关键词来自可维护的创意方向库；销量依据来自当前平台近 3 个已发布月份的历史订单汇总。标签不足时不自动推断畅销题材。</p>
+        </section>
+        <section class="panel dd-panel dd-theme-panel">
+          <div class="panel-head"><div><h2>商品题材销售表现</h2><div class="subtle">按品类内同题材商品汇总，避免不同品类直接比较</div></div><span class="dd-muted" id="designCoverage">等待数据</span></div>
+          <div class="table-wrap"><table class="dd-table"><thead><tr><th>设计题材 / 品类</th><th class="num">标注 SKU</th><th class="num">销量（件）</th><th class="num">单品均销（件）</th><th class="num">金币收益（$）</th><th>关联商品参考</th></tr></thead><tbody id="designThemeRows"></tbody></table></div>
+        </section>
+        <details class="dd-admin" id="designTagsPanel" hidden>
+          <summary><span>商品设计标签管理 <span class="dd-version">仅管理员可编辑</span></span><span class="dd-muted" id="designTagCount">0 条标签</span></summary>
+          <div class="dd-admin-body">
+            <p class="dd-muted">通过「平台 + 商品品类 + 商品 ID」关联历史销售数据。每款商品设置一个主题材，可补充风格和设计元素；保存后所有同事都能看到相应分析。</p>
+            <div class="dd-admin-head"><h3>本月待标注商品（按销量排序，点击快速填写）</h3></div>
+            <div class="dd-untagged" id="designUntagged"></div>
+            <div class="dd-editor">
+              <label>品类<select id="designTagCat"><option value="派对背景">派对背景</option><option value="头像框">头像框</option><option value="资料卡">资料卡</option><option value="聊天气泡">聊天气泡</option><option value="座驾">座驾</option></select></label>
+              <label>商品 ID<input type="text" id="designTagSku" inputmode="numeric" placeholder="如 1387"></label>
+              <label>主题材<input type="text" id="designTagTheme" list="designThemeOptions" maxlength="60" placeholder="如 婚礼"><datalist id="designThemeOptions"><option value="婚礼"></option><option value="奇幻"></option><option value="奢华"></option><option value="自然"></option><option value="科技"></option><option value="节日"></option><option value="萌宠"></option></datalist></label>
+              <label>视觉风格<input type="text" id="designTagStyles" placeholder="奢华、梦幻"></label>
+              <label>设计元素<input type="text" id="designTagElements" placeholder="龙、黄金、云海"></label>
+              <button class="button primary" type="button" id="designTagSave">保存标签</button>
+            </div>
+            <div class="dd-editor-status" id="designTagProductName"></div>
+            <div class="dd-admin-head"><h3>已保存标签</h3><input type="search" id="designTagSearch" placeholder="搜索商品 ID / 名称 / 题材" aria-label="搜索商品标签"></div>
+            <div class="dd-tag-list" id="designTagList"></div>
+          </div>
+        </details>
+        <div class="dd-section-head">历史新品销售参考（原有分析）</div>
         <div class="design-highlights" id="designHighlights"></div>
         <div class="panel">
           <div class="panel-head"><div><h2>新品系列表现</h2><div class="subtle">同名系列跨品类汇总</div></div><div class="segmented" id="designSort"><button class="chosen" data-sort="qty">按销量</button><button data-sort="coin">按金币收益</button></div></div>
