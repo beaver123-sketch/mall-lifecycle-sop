@@ -28,6 +28,8 @@ const inferObject=(name,cat)=>{
 };
 let ctx=null,tags=[],entries=[],loaded=false,loadError='',loading=false,pane='brief';
 let query='',catFilter='',statusFilter='',limit=60,allRendered=[],editing=null;
+const selectedHistoryIds=new Set();
+let bulkDeleting=false;
 function baseRows(){
  const map=new Map();
  (ctx?.reports||[]).forEach(item=>{
@@ -112,7 +114,8 @@ function buildUI(){
   '<div class="dd-history-filters"><input id="historySearch" type="search" placeholder="搜索名称、商品ID、设计对象、关键词（如：凤凰）" aria-label="搜索历史设计">'+
   '<select id="historyCategory"><option value="">全部品类</option>'+CATS.map(x=>'<option>'+x+'</option>').join('')+'</select>'+
   '<select id="historyStatus"><option value="">全部状态</option><option>历史成交</option>'+STATUSES.map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
-  '<div class="table-wrap dd-history-tablewrap"><table class="dd-history-table"><thead><tr><th>历史设计 / 商品 ID</th><th>品类</th><th>设计对象 / 题材</th><th>记录状态</th><th>数据来源 / 月份</th><th>操作</th></tr></thead><tbody id="historyRows"></tbody></table></div>'+
+  '<div class="dd-history-bulkbar" id="historyBulkBar" hidden><div class="dd-history-bulkinfo"><strong id="historySelectedCount">已选 0 条</strong><span>可批量删除人工登记 / 校对记录，自动归集的订单记录不可删除</span></div><div class="dd-history-bulkactions"><button type="button" class="button light" id="historyClearSelection">清空选择</button><button type="button" class="button dd-history-deletebtn" id="historyBulkDelete" disabled>批量删除</button></div><span class="dd-history-bulkstatus" id="historyBulkStatus" role="status"></span></div>'+
+  '<div class="table-wrap dd-history-tablewrap"><table class="dd-history-table"><thead><tr><th class="dd-history-checkcell"><input type="checkbox" id="historySelectAll" aria-label="全选当前显示的可删除人工记录" title="全选当前显示的可删除人工记录"></th><th>历史设计 / 商品 ID</th><th>品类</th><th>设计对象 / 题材</th><th>记录状态</th><th>数据来源 / 月份</th><th>操作</th></tr></thead><tbody id="historyRows"></tbody></table></div>'+
   '<div class="dd-history-footer"><span id="historyRange"></span><button type="button" class="button light" id="historyMore" hidden>显示更多</button></div>'+
   '</section>'+
   '<section class="panel dd-history-editor" id="historyEditor" hidden><div class="panel-head"><h2 id="historyEditorTitle">补充历史设计</h2><button id="historyCancel" type="button" class="button light">取消</button></div>'+
@@ -136,11 +139,53 @@ function buildUI(){
  $('historyAdd').addEventListener('click',()=>edit(null));
  $('historyCancel').addEventListener('click',()=>{$('historyEditor').hidden=true;});
  $('historyExport').addEventListener('click',exportCsv);
+ $('historySelectAll').addEventListener('change',e=>{
+  if(!ctx?.admin||bulkDeleting)return;
+  const eligible=allRendered.slice(0,limit).filter(r=>r.entry_id).map(r=>String(r.entry_id));
+  for(const id of eligible){if(e.target.checked)selectedHistoryIds.add(id);else selectedHistoryIds.delete(id);}
+  render();
+ });
+ $('historyRows').addEventListener('change',e=>{
+  const box=e.target.closest('[data-history-select]');
+  if(!box||!ctx?.admin||bulkDeleting)return;
+  const id=String(box.dataset.historySelect||'');
+  if(!allRendered.some(r=>r.entry_id&&String(r.entry_id)===id))return;
+  if(box.checked)selectedHistoryIds.add(id);else selectedHistoryIds.delete(id);
+  render();
+ });
+ $('historyClearSelection').addEventListener('click',()=>{if(bulkDeleting)return;selectedHistoryIds.clear();$('historyBulkStatus').textContent='';render();});
+ $('historyBulkDelete').addEventListener('click',bulkDelete);
  $('historyRows').addEventListener('click',e=>{
   const el=e.target.closest('[data-history-edit]');if(!el||!ctx?.admin)return;
   edit(allRendered[Number(el.dataset.historyEdit)]||null);
  });
  $('historyForm').addEventListener('submit',save);
+}
+async function bulkDelete(){
+ if(!ctx?.admin||bulkDeleting||!selectedHistoryIds.size)return;
+ const matching=getRows().filter(r=>r.entry_id&&selectedHistoryIds.has(String(r.entry_id)));
+ const ids=[...new Set(matching.map(r=>String(r.entry_id)))];
+ if(!ids.length){selectedHistoryIds.clear();render();return;}
+ if(ids.length>200){$('historyBulkStatus').textContent='单次最多删除200条，请分批选择';return;}
+ const ok=window.confirm('确定删除选中的 '+ids.length+' 条人工设计记录吗？\n删除后无法恢复；历史订单自动归集的记录不受影响。');
+ if(!ok)return;
+ bulkDeleting=true;
+ $('historyBulkStatus').textContent='正在删除 '+ids.length+' 条云端记录…';
+ render();
+ try{
+  const count=await root.MallCloud.removeDesignHistoryBatch(ctx.platform,ids);
+  selectedHistoryIds.clear();
+  $('historyEditor').hidden=true;
+  editing=null;
+  await reload();
+  $('historyBulkStatus').textContent='已删除 '+count+' 条人工记录，历史订单数据未变更';
+ }catch(err){
+  $('historyBulkStatus').textContent='批量删除失败：'+(err.message||String(err));
+  try{await reload();}catch(_err){console.warn('删除失败后刷新失败',_err);}
+ }finally{
+  bulkDeleting=false;
+  render();
+ }
 }
 function setPane(p){
  pane=p==='history'?'history':'brief';
@@ -152,6 +197,8 @@ function setPane(p){
 }
 function render(){
  if(!ctx||!$('historyRows'))return;
+ const validIds=new Set(getRows().filter(r=>r.entry_id).map(r=>String(r.entry_id)));
+ for(const id of selectedHistoryIds)if(!validIds.has(id))selectedHistoryIds.delete(id);
  const rows=getRows(),manual=rows.filter(x=>!!x.entry_id).length,sold=rows.filter(x=>x.sales).length;
  const months=new Set((ctx.reports||[]).map(x=>x.period));
  $('historyStats').innerHTML='<div><b>'+sold.toLocaleString('zh-CN')+'</b><span>历史成交 SKU</span></div>'+
@@ -167,16 +214,32 @@ function render(){
  const filtered=rows.filter(r=>(!catFilter||r.category===catFilter)&&(!statusFilter||r.status===statusFilter)&&
   (!q||[r.name,r.sku_id,r.design_object,r.theme,(r.elements||[]).join(' ')].some(v=>norm(v).includes(q))));
  allRendered=filtered;
- $('historyRows').innerHTML=filtered.slice(0,limit).map((r,i)=>{
+ const visible=filtered.slice(0,limit);
+ const eligible=visible.filter(r=>r.entry_id).map(r=>String(r.entry_id));
+ const chosen=eligible.filter(id=>selectedHistoryIds.has(id));
+ const allBox=$('historySelectAll');
+ allBox.disabled=!ctx.admin||bulkDeleting||!eligible.length;
+ allBox.checked=!!eligible.length&&chosen.length===eligible.length;
+ allBox.indeterminate=chosen.length>0&&chosen.length<eligible.length;
+ $('historyBulkBar').hidden=!ctx.admin;
+ $('historySelectedCount').textContent='已选 '+selectedHistoryIds.size+' 条';
+ $('historyBulkDelete').textContent=bulkDeleting?'删除中…':'批量删除'+(selectedHistoryIds.size?'（'+selectedHistoryIds.size+'）':'');
+ $('historyBulkDelete').disabled=bulkDeleting||!selectedHistoryIds.size;
+ $('historyClearSelection').disabled=bulkDeleting||!selectedHistoryIds.size;
+ $('historyRows').innerHTML=visible.map((r,i)=>{
   const keywords=(r.elements||[]).slice(0,3).join(' / ');
   const appearance=r.sales?r.first_seen+(r.last_seen!==r.first_seen?' ～ '+r.last_seen:''):'—';
-  return '<tr><td><strong>'+escape(r.name)+'</strong><small>ID '+escape(r.sku_id||'未上线')+'</small></td>'+
+  const canDelete=!!ctx.admin&&!!r.entry_id;
+  const checkbox='<td class="dd-history-checkcell">'+(canDelete?
+   '<input type="checkbox" data-history-select="'+escape(String(r.entry_id))+'" aria-label="选择'+escape(r.name)+' '+escape(r.category)+'"'+(selectedHistoryIds.has(String(r.entry_id))?' checked':'')+(bulkDeleting?' disabled':'')+'>':
+   '<span class="dd-history-unselectable" title="原始订单记录不可删除">—</span>')+'</td>';
+  return '<tr'+(canDelete&&selectedHistoryIds.has(String(r.entry_id))?' class="dd-history-is-selected"':'')+'>'+checkbox+'<td><strong>'+escape(r.name)+'</strong><small>ID '+escape(r.sku_id||'未上线')+'</small></td>'+
     '<td>'+escape(r.category)+'</td>'+
     '<td><span>'+escape(r.design_object||'待识别 / 可校对')+'</span><small>'+escape(r.theme||'未标注题材')+(keywords?' · '+escape(keywords):'')+'</small></td>'+
     '<td><span class="dd-history-badge">'+escape(r.status)+'</span></td>'+
     '<td><span>'+escape(r.source)+'</span><small>'+escape(appearance)+'</small></td>'+
     '<td>'+(ctx.admin?'<button class="dd-history-link" data-history-edit="'+i+'" type="button">'+(r.entry_id?'编辑':'校对')+'</button>':'<span class="dd-muted">只读</span>')+'</td></tr>';
- }).join('')||'<tr><td colspan="6" class="dd-empty">没有符合条件的历史设计记录。</td></tr>';
+ }).join('')||'<tr><td colspan="7" class="dd-empty">没有符合条件的历史设计记录。</td></tr>';
  $('historyRange').textContent='当前展示 '+Math.min(limit,filtered.length)+' / '+filtered.length+' 条';
  $('historyMore').hidden=filtered.length<=limit;
 }
@@ -247,6 +310,7 @@ async function reload(){
 }
 function setContext(next){
  const was=!ctx||ctx.platform!==next.platform;
+ if(was)selectedHistoryIds.clear();
  ctx=next;render();
  if(!loaded&&!loading)reload();
  else if(was)root.dispatchEvent(new Event('mall:design-history-change'));
