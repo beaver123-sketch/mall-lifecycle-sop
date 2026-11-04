@@ -245,6 +245,28 @@ function setContext(next){
  else if(was)root.dispatchEvent(new Event('mall:design-history-change'));
 }
 function setTags(next){tags=next||[];render();root.dispatchEvent(new Event('mall:design-history-change'));}
+async function registerRecommendation(candidate){
+ if(!ctx?.admin)throw Error('仅云端管理员可登记设计需求');
+ if(!candidate||check(candidate).blocked)throw Error('该设计与历史记录重复，请更换设计对象');
+ if(!root.MallCloud?.putDesignHistoryBatch)throw Error('云端批量登记功能尚未就绪');
+ const cats=candidate.kind==='vehicle'?['座驾']:['头像框','资料卡','派对背景','聊天气泡'];
+ const designObject=candidate.kind==='vehicle'?candidate.object:(SET_SUBJECTS[candidate.name]||candidate.name);
+ const payload=cats.map(category=>({
+  platform:ctx.platform,category,sku_id:null,name:candidate.name,
+  design_object:designObject,theme:candidate.theme||'',
+  elements:[...(candidate.keywords||[])].slice(0,12),status:'待设计',
+  notes:(candidate.kind==='vehicle'?
+   (candidate.requirements||candidate.structure||''):
+   (candidate.idea||'')+'；'+(candidate.variants?.[category]||'')).slice(0,500)
+ }));
+ await root.MallCloud.putDesignHistoryBatch(payload);
+ await reload();
+ query=candidate.name;$('historySearch').value=query;
+ catFilter='';$('historyCategory').value='';
+ statusFilter='';$('historyStatus').value='';
+ limit=60;setPane('history');
+}
+
 buildUI();
-root.MallDesignHistory=Object.freeze({setContext,setTags,check,getRows,open:()=>setPane('history'),get loaded(){return loaded;},get error(){return loadError;}});
+root.MallDesignHistory=Object.freeze({setContext,setTags,check,getRows,registerRecommendation,open:()=>setPane('history'),get loaded(){return loaded;},get error(){return loadError;}});
 })(window);
