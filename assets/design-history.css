@@ -57,3 +57,7 @@
  .dd-history-actions .button{flex:1}
 }
 #designHistoryExclusions{margin:-3px 0 16px;padding:10px 13px;border-radius:8px;background:#f7f9fc;border:1px solid #e6edf6;font-size:11px;line-height:1.7;color:#637b9f}
+
+.dd-register-wrap{display:flex;justify-content:flex-end;margin-top:14px;border-top:1px solid #edf1f6;padding-top:12px}
+.dd-register-wrap .dd-register{font-size:11px;font-weight:650;white-space:normal}
+.dd-register:disabled{opacity:.5;cursor:progress}
