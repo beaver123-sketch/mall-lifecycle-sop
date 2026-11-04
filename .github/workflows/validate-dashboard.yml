@@ -15,6 +15,7 @@ jobs:
           node --check assets/dashboard.js
           node --check assets/design-direction.js
           node --check assets/design-history.js
+          node --check assets/huaban-references.js
           node --check assets/ride-briefs.js
           node --check assets/cloud-layer.js
       - name: Check required pages
@@ -58,6 +59,9 @@ jobs:
               'putDesignHistory:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};const id=item.entry_id||"test-h-"+Object.keys(s.designHistory).length;s.designHistory[id]={...item,entry_id:id};save(s)},',
               'putDesignHistoryBatch:async(items)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};items.forEach((item,i)=>{const id="test-b-"+(Object.keys(s.designHistory).length+i);s.designHistory[id]={...item,entry_id:id}});save(s)},',
               'removeDesignHistory:async(id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.designHistory?.[id];save(s)},',
+              'listDesignReferences:async()=>Object.values(read().huabanRefs||{}),',
+              'putDesignReference:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.huabanRefs??={};s.huabanRefs[[item.platform,item.design_kind,item.design_name,item.category].join("|")]=item;save(s)},',
+              'removeDesignReference:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.huabanRefs?.[[item.platform,item.design_kind,item.design_name,item.category].join("|")];save(s)},',
               'listRideSettings:async()=>Object.values(read().rideSettings||{}),',
               'putRideSettings:async(p,excluded_names,tier_prices)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.rideSettings??={};s.rideSettings[p]={platform:p,excluded_names,tier_prices};save(s)},',
               'removeSources:async()=>{if(!'+admin+')throw Error("guest denied")}',
@@ -94,6 +98,21 @@ jobs:
               if(await page.locator('#designRecommendCards .dd-variants').count()!==4)throw Error('Expected four coordinated theme sets');
               if(await page.locator('#designRecommendCards .dd-variant').count()!==16)throw Error('Each theme set must contain avatar frame, profile card, party background and chat bubble');
               if(await page.locator('#designRecommendCards .dd-card:first-child .dd-tags span').count()!==5)throw Error('Theme set must have five shared visual keywords');
+              // Huaban image reference slots must be category-specific; only verified pin URLs can be saved.
+              if(await page.locator('#designRecommendCards .dd-variants .hb-ref').count()!==16)throw Error('Expected one reference slot for every themed category');
+              if(!(await page.locator('#designRecommendCards .dd-variant:first-child .hb-search').getAttribute('href')).includes('huaban.com/search/?q='))throw Error('Missing category-specific Huaban discovery link');
+              await page.locator('#designRecommendCards .dd-card:first-child .dd-variant:first-child [data-hb-edit]').click();
+              await page.locator('#hbEditorPin').fill('https://huaban.com/search/?q=头像框');
+              await page.locator('#hbEditorSave').click();
+              if(!(await page.locator('#hbEditorStatus').innerText()).includes('单张采集链接'))throw Error('Search page should not be recorded as selected reference');
+              await page.locator('#hbEditorPin').fill('https://huaban.com/pins/123456789/');
+              await page.locator('#hbEditorImage').fill('https://hbimg.huaban.com/test-frame.png');
+              await page.locator('#hbEditorNote').fill('只参考外框材质');
+              await page.locator('#hbEditorSave').click();
+              await page.waitForFunction(()=>document.querySelector('#designRecommendCards .dd-variant:first-child .hb-confirmed'),null,{timeout:10000});
+              if(!(await page.locator('#designRecommendCards .dd-variant:first-child .hb-primary-link').getAttribute('href')).includes('/pins/123456789'))throw Error('Saved single-pin reference missing');
+              if(await page.locator('#designRecommendCards .dd-card:first-child .hb-confirmed').count()!==1)throw Error('Reference must be tied to one category, not entire set');
+
               await page.locator('#designTagsPanel summary').click();
               await page.locator('#designUntagged [data-sku="1398"]').click();
               await page.locator('#designTagTheme').fill('奇幻');
@@ -302,6 +321,9 @@ jobs:
               await guest.locator('a[data-page="design"]').click();
               if(await guest.locator('#designRecommendCards .dd-card').count()!==4)throw Error('Guest cannot see shared design direction');
               if(await guest.locator('#designTagsPanel').isVisible())throw Error('Guest should not have design tag editor');
+              if(!(await guest.locator('#designRecommendCards .dd-card:first-child .dd-variant:first-child .hb-primary-link').getAttribute('href')).includes('/pins/123456789'))throw Error('Guest cannot see admin-selected Huaban reference');
+              if(await guest.locator('#designRecommendCards [data-hb-edit]').count()!==0)throw Error('Guest cannot edit Huaban reference');
+
               await guest.locator('#designRecommendCat').selectOption('vehicle');
               await guest.waitForFunction(()=>document.querySelector('#rideTierHint')?.textContent.includes('20,000 金币'),null,{timeout:10000});
               if(await guest.locator('#rideSettingsPanel').isVisible())throw Error('Guest should not have ride pricing editor');
