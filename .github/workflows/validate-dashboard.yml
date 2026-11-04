@@ -14,6 +14,7 @@ jobs:
         run: |
           node --check assets/dashboard.js
           node --check assets/design-direction.js
+          node --check assets/ride-briefs.js
           node --check assets/cloud-layer.js
       - name: Check required pages
         run: |
@@ -51,6 +52,8 @@ jobs:
               'listDesignTags:async()=>Object.values(read().tags||{}),',
               'putDesignTag:async(tag)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.tags??={};s.tags[tag.platform+"|"+tag.category+"|"+tag.sku_id]=tag;save(s)},',
               'removeDesignTag:async(p,c,id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.tags?.[p+"|"+c+"|"+id];save(s)},',
+              'listRideSettings:async()=>Object.values(read().rideSettings||{}),',
+              'putRideSettings:async(p,excluded_names,tier_prices)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.rideSettings??={};s.rideSettings[p]={platform:p,excluded_names,tier_prices};save(s)},',
               'removeSources:async()=>{if(!'+admin+')throw Error("guest denied")}',
               '};',
               '})();'
@@ -83,7 +86,25 @@ jobs:
               if(!(await page.locator('#designThemeRows').innerText()).includes('奇幻'))throw Error('Design theme analysis must use saved cloud tags');
               await page.locator('#designRecommendCat').selectOption('vehicle');
               if(await page.locator('#designRecommendCards .dd-variants').count())throw Error('Rides must not be grouped with 4-piece theme set');
-              if(await page.locator('#designRecommendCards .dd-vehicle').count()!==4)throw Error('Expected independent ride briefs');
+              if(await page.locator('#designRecommendCards .dd-ride-brief').count()!==4)throw Error('Expected 4 distinct ride briefs');
+              if(await page.locator('#designRecommendCards .dd-ride-action').count()!==16)throw Error('Advanced ride tier needs 4 timecoded actions for each brief');
+              if(!(await page.locator('#rideTierHint').innerText()).includes('7–8s'))throw Error('Default ride tier should be advanced 7-8s');
+              await page.locator('#rideTier').selectOption('premium');
+              if(await page.locator('#designRecommendCards .dd-card:first-child .dd-ride-action').count()!==5)throw Error('Premium ride tier should have 5 timecoded actions');
+              if(!(await page.locator('#designRecommendCards .dd-card:first-child .dd-ride-price').innerText()).includes('9.5s'))throw Error('Premium ride duration should be explicit');
+              await page.locator('#rideTier').selectOption('basic');
+              if(await page.locator('#designRecommendCards .dd-card:first-child .dd-ride-action').count()!==3)throw Error('Basic ride tier needs 3 timecoded actions');
+              await page.locator('#rideSettingsPanel summary').click();
+              await page.locator('#ridePrice_basic_coin').fill('10000');
+              await page.locator('#ridePrice_advanced_coin').fill('20000');
+              await page.locator('#ridePrice_premium_coin').fill('30000');
+              await page.locator('#rideManualExclude').fill('极地雪铠');
+              await page.locator('#rideSettingsSave').click();
+              await page.waitForFunction(()=>document.querySelector('#rideSettingsStatus')?.textContent.includes('已保存到云端'),null,{timeout:10000});
+              if((await page.locator('#designRecommendCards').innerText()).includes('极地雪铠'))throw Error('Excluded ride appeared in recommendations');
+              if(!(await page.locator('#designRecommendCards .dd-card:first-child .dd-ride-price').innerText()).includes('10,000 金币'))throw Error('Saved tier price was not displayed');
+              await page.locator('#rideTier').selectOption('advanced');
+              if(!(await page.locator('#designRecommendCards .dd-card:first-child .dd-ride-price').innerText()).includes('20,000 金币'))throw Error('Advanced price not synchronized');
               await page.locator('#designRecommendCat').selectOption('set');
               await page.locator('a[data-page="overview"]').click();
               // Month archive navigation shared by overview, new arrivals and design.
@@ -263,6 +284,11 @@ jobs:
               await guest.locator('a[data-page="design"]').click();
               if(await guest.locator('#designRecommendCards .dd-card').count()!==4)throw Error('Guest cannot see shared design direction');
               if(await guest.locator('#designTagsPanel').isVisible())throw Error('Guest should not have design tag editor');
+              await guest.locator('#designRecommendCat').selectOption('vehicle');
+              await guest.waitForFunction(()=>document.querySelector('#rideTierHint')?.textContent.includes('20,000 金币'),null,{timeout:10000});
+              if(await guest.locator('#rideSettingsPanel').isVisible())throw Error('Guest should not have ride pricing editor');
+              if((await guest.locator('#designRecommendCards').innerText()).includes('极地雪铠'))throw Error('Excluded ride surfaced to guest');
+              if(!(await guest.locator('#ridePastCount').innerText()).includes('1 条人工排除'))throw Error('Manual exclusions are not shared with guests');
               await guestContext.close();
               await page.locator('a[data-page="overview"]').click();
               console.log('PASS: cloud analytics sharing, guest read-only access, month isolation, and direct deletion.');
