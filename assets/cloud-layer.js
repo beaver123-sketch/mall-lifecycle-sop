@@ -75,8 +75,27 @@
     const {error}=await client.storage.from(BUCKET).remove(unique);
     fail('移除云端原始文件',error);
   }
+  async function listDesignTags() {
+    if(!client)throw Error('云端服务尚未初始化');
+    return fetchPaged('mall_design_product_tags','platform,category,sku_id,name,theme,styles,elements,updated_at');
+  }
+  async function putDesignTag(tag) {
+    requireAdmin();
+    const payload={platform:tag.platform,category:tag.category,sku_id:String(tag.sku_id),
+      name:String(tag.name||''),theme:String(tag.theme),styles:tag.styles||[],elements:tag.elements||[],
+      updated_at:new Date().toISOString()};
+    const {error}=await client.from('mall_design_product_tags').upsert(payload,{onConflict:'platform,category,sku_id'});
+    fail('保存商品设计标签',error);
+  }
+  async function removeDesignTag(platform,category,skuId) {
+    requireAdmin();
+    const {error}=await client.from('mall_design_product_tags').delete().eq('platform',platform)
+      .eq('category',category).eq('sku_id',String(skuId));
+    fail('删除商品设计标签',error);
+  }
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
+    listDesignTags,putDesignTag,removeDesignTag,
     get isAdmin(){return isAdmin},
     get user(){return user}
   });
