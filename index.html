@@ -8,13 +8,15 @@
 <link rel="stylesheet" href="assets/dashboard.css?v=20261104-cloud-v1">
 <link rel="stylesheet" href="assets/design-direction.css?v=20261104-ride-v1">
 <link rel="stylesheet" href="assets/design-history.css?v=20261104-history-v3">
+<link rel="stylesheet" href="assets/huaban-references.css?v=20261104-huaban-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0" defer></script>
-<script src="assets/cloud-layer.js?v=20261104-history-v3" defer></script>
+<script src="assets/cloud-layer.js?v=20261104-huaban-v1" defer></script>
 <script src="assets/dashboard.js?v=20261104-design-v1" defer></script>
 <script src="assets/ride-briefs.js?v=20261104-ride-v1" defer></script>
 <script src="assets/design-history.js?v=20261104-history-v3" defer></script>
-<script src="assets/design-direction.js?v=20261104-history-v3" defer></script>
+<script src="assets/huaban-references.js?v=20261104-huaban-v1" defer></script>
+<script src="assets/design-direction.js?v=20261104-huaban-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -91,6 +93,7 @@
             <div class="dd-control-actions"><button type="button" class="button light" id="designRegenerate">↻ 换一批设计</button><button type="button" class="button primary" id="designExportBrief">导出设计提需 CSV</button></div>
           </div>
           <div class="dd-summary" id="designRecommendNotice">以一整套主题为单位推荐：头像框、资料卡、派对背景、聊天气泡使用相同主题；座驾单独提需。</div>
+          <p class="hb-global-status" id="huabanReferenceStatus">花瓣搜索可用；单张参考采集需确认后保存，未确认内容不会标为已选参考图。</p>
           <div class="dd-ride-past" id="ridePastBox" hidden>
             <div class="dd-ride-past-top"><strong>历史座驾排重</strong><span id="ridePastCount">正在核对历史记录…</span></div>
             <p id="ridePastNames"></p>
@@ -194,6 +197,18 @@
 </div>
 <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple hidden>
 <input type="file" id="backupInput" accept=".json" hidden>
+<dialog class="hb-dialog" id="huabanReferenceDialog" aria-labelledby="hbEditorTitle">
+  <div class="hb-dialog-content">
+    <div class="hb-dialog-head"><div><h2>绑定花瓣参考图</h2><p id="hbEditorTitle">具体设计 · 品类</p></div><button type="button" class="hb-dialog-close" id="hbEditorCancel" aria-label="关闭">×</button></div>
+    <p class="hb-dialog-subtitle">先根据品类与设计关键词搜索，挑选真正对应的采集图。每个品类只保留一张参考，保存后同步给团队。</p>
+    <div class="hb-dialog-search"><span id="hbEditorQuery"></span><a id="hbEditorSearch" target="_blank" rel="noopener noreferrer">打开花瓣搜索</a></div>
+    <label class="hb-field">花瓣单张采集详情链接 <em>必填</em><input id="hbEditorPin" type="url" placeholder="https://huaban.com/pins/123456789/" autocomplete="off" spellcheck="false"></label>
+    <label class="hb-field">参考图直链 / 缩略图 URL <small>选填，用于在需求卡片直接显示图片</small><input id="hbEditorImage" type="url" placeholder="https://hbimg.huaban.com/..." autocomplete="off" spellcheck="false"></label>
+    <label class="hb-field">参考重点 <small>选填，如参考外轮廓、材质，不直接照搬</small><textarea id="hbEditorNote" rows="2" maxlength="200" placeholder="参考什么部分？需避免哪些同质化细节？"></textarea></label>
+    <p id="hbEditorStatus" role="status"></p>
+    <div class="hb-dialog-actions"><button class="button hb-danger" type="button" id="hbEditorRemove" hidden>移除这张参考</button><button class="button primary" type="button" id="hbEditorSave">保存到设计提需</button></div>
+  </div>
+</dialog>
 <div id="toast" class="toast" hidden></div>
 </body>
 </html>
