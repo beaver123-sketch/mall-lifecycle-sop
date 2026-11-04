@@ -61,3 +61,8 @@
 .dd-register-wrap{display:flex;justify-content:flex-end;margin-top:14px;border-top:1px solid #edf1f6;padding-top:12px}
 .dd-register-wrap .dd-register{font-size:11px;font-weight:650;white-space:normal}
 .dd-register:disabled{opacity:.5;cursor:progress}
+
+/* An unreported month hides current-month analytics, not the cross-month design archive. */
+#page-design.month-no-data > .dd-workspace-tabs{display:flex!important}
+#page-design.month-no-data.dd-history-mode > #designHistoryWorkspace:not([hidden]){display:block!important}
+#page-design.month-no-data.dd-history-mode > .month-empty{display:none!important}
