@@ -92,3 +92,64 @@
 #designRecommendCards:not(.dd-rides) .dd-card{padding:22px 24px}
 #designRecommendCards:not(.dd-rides) .dd-card h3{font-size:21px}
 @media(max-width:740px){.dd-variants{grid-template-columns:1fr}#designRecommendCards:not(.dd-rides) .dd-card{padding:17px}}
+
+/* Independent ride briefs: real vehicle anatomy, 3 duration / price tiers, concise timecoded storyboards. */
+#rideTierBox[hidden],#ridePastBox[hidden],#rideSettingsPanel[hidden]{display:none!important}
+.dd-ride-past{border:1px solid #e9edf5;background:#fbfcff;border-radius:10px;padding:15px 18px;margin:0 0 17px}
+.dd-ride-past-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dd-ride-past-top strong{font-size:12px;color:#33486e}
+.dd-ride-past-top span{font-size:11px;color:#70849f}
+.dd-ride-past p{margin:9px 0 7px;font-size:11px;color:#8290a4;line-height:1.7;overflow-wrap:anywhere}
+.dd-ride-legend{font-size:10px;color:#98a4b7;line-height:1.65}
+.dd-ride-tier-hint{margin-top:12px;border-top:1px solid #e8edf6;padding-top:11px;font-size:12px;font-weight:680;color:#4c6da7}
+.dd-ride-settings{border:1px solid #dae5f6;border-radius:10px;background:#fff;margin:0 0 17px}
+.dd-ride-settings summary{display:flex;justify-content:space-between;gap:12px;align-items:center;cursor:pointer;list-style:none;padding:15px 18px;font-weight:720;color:#3c5274}
+.dd-ride-settings summary::-webkit-details-marker{display:none}
+.dd-ride-settings summary span:last-child{color:#90a0b6;font-size:11px;font-weight:480}
+.dd-ride-settings-body{border-top:1px solid #edf1f7;padding:17px 18px}
+.dd-ride-price-table{display:grid;grid-template-columns:1.1fr .75fr 1.4fr 1.45fr;gap:10px 13px;align-items:center}
+.dd-ride-price-table .dd-price-head{font-size:11px;color:#7988a0;padding-bottom:4px;font-weight:680}
+.dd-ride-price-table strong{font-size:11px;color:#3f5578}
+.dd-ride-price-table>span{color:#8494aa;font-size:11px}
+.dd-ride-price-table input,.dd-ride-exclusion-label textarea{min-width:0;width:100%;border:1px solid #dfe6f0;border-radius:8px;background:#fff;color:#263752;outline:none;padding:9px 11px;font-size:12px}
+.dd-ride-price-table input:focus,.dd-ride-exclusion-label textarea:focus{border-color:#8ba7d9;box-shadow:0 0 0 3px #eff5ff}
+.dd-ride-exclusion-label{display:block;margin-top:19px;color:#62748d;font-size:11px;font-weight:630}
+.dd-ride-exclusion-label textarea{margin-top:9px;min-height:88px;resize:vertical;line-height:1.65}
+.dd-ride-savebar{display:flex;align-items:center;gap:12px;margin-top:14px}
+.dd-ride-savebar span{font-size:11px;color:#8797aa}
+.dd-ride-brief{padding:16px 0 3px}
+.dd-ride-object{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;background:#f5f8fe;border:1px solid #eaf0fc;border-radius:9px;margin-bottom:14px}
+.dd-ride-object small,.dd-ride-price small{display:block;font-size:10px;color:#91a0b5;margin:0 0 5px}
+.dd-ride-object strong{font-size:14px;color:#283e69}
+.dd-ride-kind{background:#e7effe;color:#5a79ae;padding:6px 8px;border-radius:5px;font-size:10px;white-space:nowrap}
+.dd-ride-fact{display:grid;grid-template-columns:62px 1fr;gap:9px;margin:12px 0;font-size:12px;line-height:1.75}
+.dd-ride-fact b{font-size:11px;color:#607a9e;white-space:nowrap}
+.dd-ride-fact span{color:#607087}
+.dd-ride-price{display:grid;grid-template-columns:1fr 1.4fr 1.6fr;gap:6px;border:1px solid #e8edf7;border-radius:9px;background:#fbfcff;padding:13px 15px;margin:16px 0}
+.dd-ride-price strong{font-size:12px;line-height:1.6;color:#48659a}
+.dd-ride-timeline-title{font-size:12px;color:#3e557e;font-weight:750;margin:16px 0 10px}
+.dd-ride-timeline-title span{font-weight:480;font-size:10px;color:#9aa8b9;margin-left:6px}
+.dd-ride-timeline{border:1px solid #e9edf5;border-radius:9px;overflow:hidden}
+.dd-ride-action{display:grid;grid-template-columns:68px 62px minmax(0,1fr);gap:9px;align-items:start;padding:11px 13px;border-bottom:1px solid #edf1f7;font-size:11px;line-height:1.75}
+.dd-ride-action:last-child{border-bottom:0}
+.dd-ride-action time{color:#4d70a9;font-size:11px;font-weight:720;white-space:nowrap}
+.dd-ride-action b{color:#657c9e;font-weight:690;white-space:nowrap}
+.dd-ride-action span{color:#63748d}
+#designRecommendCards.dd-rides .dd-card{padding:20px 22px}
+#designRecommendCards.dd-rides .dd-card h3{font-size:19px}
+#designRecommendCards.dd-rides{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:1150px){
+ #designRecommendCards.dd-rides{grid-template-columns:1fr}
+ .dd-ride-price-table{gap:8px}
+}
+@media(max-width:610px){
+ .dd-ride-price{grid-template-columns:1fr 1fr}
+ .dd-ride-price>div:last-child{grid-column:1/-1}
+ .dd-ride-price-table{grid-template-columns:1fr 1fr}
+ .dd-ride-price-table .dd-price-head{display:none}
+ .dd-ride-price-table>strong{margin-top:8px}
+ .dd-ride-price-table input{font-size:11px}
+ .dd-ride-action{grid-template-columns:60px 1fr;gap:4px 10px}
+ .dd-ride-action span{grid-column:1/-1}
+ .dd-ride-savebar{align-items:flex-start;flex-direction:column}
+}
