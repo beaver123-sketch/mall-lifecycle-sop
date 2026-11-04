@@ -38,18 +38,135 @@ function notify(s,bad){const el=$('toast');el.textContent=s;el.hidden=false;el.s
 function alertMsg(s){$('alert').textContent=s;$('alert').hidden=!s}
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('mall-month-archive-v3',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('data'))r.result.createObjectStore('data',{keyPath:'key'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 function transaction(mode,fn){return new Promise((resolve,reject)=>{const tx=db.transaction('data',mode),q=fn(tx.objectStore('data'));let val;q.onsuccess=()=>val=q.result;q.onerror=()=>reject(q.error);tx.oncomplete=()=>resolve(val);tx.onerror=()=>reject(tx.error)})}
-const readAll=()=>transaction('readonly',s=>s.getAll());
-const readOne=k=>transaction('readonly',s=>s.get(k));
-const writeOne=x=>transaction('readwrite',s=>s.put(x));
-const deleteOne=k=>transaction('readwrite',s=>s.delete(k));
+/* Cloud-first dashboard: admin accesses parsed private archives, viewers only published aggregates. */
+let cloudActive=false,cloudAdmin=false,cloudOffline='',cloudReports=new Map(),cloudQuarters=new Map(),localHistoryCount=0;
+const localReadAll=()=>transaction('readonly',store=>store.getAll());
+const localReadOne=k=>transaction('readonly',store=>store.get(k));
+const localWriteOne=x=>transaction('readwrite',store=>store.put(x));
+const localDeleteOne=k=>transaction('readwrite',store=>store.delete(k));
+const emptyArchive=(p,m)=>({key:key(p,m),platform:p,ym:m,files:[],launches:[]});
+const readAll=async()=>cloudActive?(cloudAdmin?[...archive.values()]:[]):localReadAll();
+const readOne=async k=>cloudActive?archive.get(k):localReadOne(k);
+function sanitizedReport(data){
+ return {ym:data.ym,rows:data.rows,whole:data.whole,launchCount:data.launchCount,
+  duplicates:data.duplicates,collisions:data.collisions,missing:data.missing,paymentNotes:data.paymentNotes,
+  skus:data.skus.map(s=>({id:s.id,cat:s.cat,name:s.name,qty:s.qty,coin:s.coin,
+    ticket:s.ticket,first:s.first,new:!!s.new})),
+  cats:data.cats.map(c=>({cat:c.cat,qty:c.qty,coin:c.coin,ticket:c.ticket,
+    newQty:c.newQty,newCoin:c.newCoin,newTicket:c.newTicket,newSkusCount:c.newSkus.size})),
+  daily:data.daily,files:[]};
+}
+function hydratedReport(report){
+ return {...report,files:[],skus:report.skus||[],cats:(report.cats||[]).map(c=>({
+  ...c,newSkus:new Set(Array.from({length:c.newSkusCount||0},(_,i)=>i))
+ })),daily:report.daily||[],whole:report.whole||{qty:0,coin:0,ticket:0,newQty:0,newCoin:0,newTicket:0}};
+}
+async function publishArchive(entry) {
+ const p=entry.platform,m=entry.ym,k=key(p,m);
+ const savePlatform=platform;
+ platform=p;
+ try {
+  if(!(entry.files||[]).some(f=>(f.rows||[]).length)) {
+   await window.MallCloud.removeReport(p,m);
+   cloudReports.delete(k);
+  } else {
+   const snap=aggregate(m);
+   const publicData=sanitizedReport(snap);
+   await window.MallCloud.putReport(p,m,publicData);
+   cloudReports.set(k,publicData);
+  }
+ } finally {platform=savePlatform}
+}
+async function writeOne(entry){
+ if(!cloudActive)return localWriteOne(entry);
+ if(!cloudAdmin||cloudOffline)throw Error('云端只允许已授权管理员修改');
+ const k=key(entry.platform,entry.ym),previous=archive.get(k);
+ const normalized={...entry,key:k,files:(entry.files||[]).map(f=>({...f,blob:undefined})),
+  launches:entry.launches??previous?.launches??initialLaunches(entry.platform,entry.ym)};
+ await window.MallCloud.putArchive(entry.platform,entry.ym,normalized);
+ archive.set(k,normalized);
+ await publishArchive(normalized);
+}
+async function deleteOne(k){
+ if(!cloudActive)return localDeleteOne(k);
+ if(!cloudAdmin||cloudOffline)throw Error('云端只允许已授权管理员修改');
+ const [p,m]=k.split('|'),old=archive.get(k)||emptyArchive(p,m);
+ const empty={...old,files:[],savedAt:new Date().toISOString()};
+ await window.MallCloud.putArchive(p,m,empty);
+ archive.set(k,empty);
+ await window.MallCloud.removeReport(p,m);
+ cloudReports.delete(k);
+}
+function initialLaunches(p,m){
+ if(p==='POPPO'&&m==='2026-10')return OCT_IDS.map(id=>({id,cat:'',date:''}));
+ return [];
+}
+async function refreshCloudData(){
+ const data=await window.MallCloud.refresh();
+ cloudReports=new Map(data.reports.map(r=>[key(r.platform,r.period),r.report]));
+ cloudQuarters=new Map(data.quarters.map(r=>[r.platform+'|'+r.quarter,r.report]));
+ cloudAdmin=data.isAdmin;
+ archive=new Map(cloudAdmin?data.archives.map(r=>{
+  const e=r.archive||emptyArchive(r.platform,r.period);
+  return [key(r.platform,r.period),{...e,key:key(r.platform,r.period),platform:r.platform,ym:r.period}]
+ }):data.reports.map(r=>[
+  key(r.platform,r.period),
+  {key:key(r.platform,r.period),platform:r.platform,ym:r.period,
+    files:[{name:'已发布月度分析',rows:[{}]}]}
+ ]));
+}
+function pendingLocalHistory(){
+ if(!cloudAdmin)return 0;
+ return localHistoryCount;
+}
+async function syncLocalHistory(){
+ if(!cloudAdmin||cloudOffline){notify('请先登录管理员身份',true);return}
+ const btn=$('syncLocalCloud');
+ btn.disabled=true;
+ let uploaded=0,skipped=0;
+ try {
+  const history=await localReadAll();
+  const legacyLaunches=load(LAUNCH_KEY);
+  for(const item of history) {
+   if(!item?.platform||!/^\d{4}-\d{2}$/.test(item.ym)||!Array.isArray(item.files)||!item.files.length)continue;
+   const k=key(item.platform,item.ym),prior=archive.get(k);
+   if(prior?.files?.length){skipped++;continue}
+   btn.textContent='正在同步 '+item.ym+'…';
+   const launches=Object.prototype.hasOwnProperty.call(legacyLaunches,k)?
+    legacyLaunches[k]:initialLaunches(item.platform,item.ym);
+   await writeOne({...item,launches,files:item.files.map(f=>({...f,blob:undefined}))});
+   uploaded++;
+  }
+  localHistoryCount=0;
+  await syncDB();
+  notify('成功同步 '+uploaded+' 个月'+(skipped?' · '+skipped+' 个月云端已有记录已跳过':''));
+ }catch(err){notify('云端同步未完成：'+err.message,true);alertMsg('历史数据同步失败：'+err.message)}
+ finally {btn.disabled=false;btn.textContent='一键同步本地历史数据'}
+}
+function renderCloudStatus(){
+ const status=$('cloudStatus');
+ if(!cloudActive){status.hidden=false;status.textContent='正在连接云端商城数据…';return}
+ status.hidden=false;
+ status.classList.toggle('error',!!cloudOffline);
+ status.textContent=cloudOffline?'云端连接失败：'+cloudOffline+'。本机历史数据仍安全保留，请检查网络后刷新页面。':
+  cloudAdmin?'云端已连接 · 管理员模式 · 上传或修改会同步给所有查看者':'云端已连接 · 共享只读 · 当前显示已发布的月份数据';
+ $('cloudLocation').textContent=cloudOffline?'云端连接异常':'云端数据空间';
+ $('headerUpload').hidden=!cloudAdmin||!!cloudOffline;
+ $('viewerDataPanel').hidden=cloudAdmin&&!cloudOffline;
+ $('adminDataControls').hidden=!cloudAdmin||!!cloudOffline;
+ const count=pendingLocalHistory();
+ $('cloudMigrate').hidden=!cloudAdmin||!!cloudOffline||!count;
+ if(count)$('cloudMigrateDescription').textContent='检测到本机 '+count+' 个已保存月份。点击后上传尚未发布的月份，云端已有月份会跳过，不会覆盖。';
+ document.body.classList.toggle('cloud-readonly',!cloudAdmin||!!cloudOffline);
+}
 const ym=()=>year+'-'+String(month).padStart(2,'0');
 const key=(p,m)=>p+'|'+m;
 const archiveEntry=(m)=>archive.get(key(platform,m));
 function monthRec(m){return (archiveEntry(m)?.files||[]).flatMap(f=>f.rows||[])}
-function launchesFor(m){const s=load(LAUNCH_KEY),k=key(platform,m);if(Object.prototype.hasOwnProperty.call(s,k))return s[k]||[];if(platform==='POPPO'&&m==='2026-10')return OCT_IDS.map(id=>({id,cat:'',date:''}));return []}
+function launchesFor(m){if(cloudActive){const e=archiveEntry(m);return e?.launches??initialLaunches(platform,m)}const s=load(LAUNCH_KEY),k=key(platform,m);if(Object.prototype.hasOwnProperty.call(s,k))return s[k]||[];if(platform==='POPPO'&&m==='2026-10')return OCT_IDS.map(id=>({id,cat:'',date:''}));return []}
 function launchIndex(m){const entries=launchesFor(m);return {byId:new Set(entries.filter(x=>!x.cat).map(x=>String(x.id))),byKey:new Set(entries.filter(x=>x.cat).map(x=>x.cat+'|'+x.id)),dateById:new Map(entries.map(x=>[(x.cat?x.cat+'|':'')+x.id,x.date||'']))}}
 function isNew(row,ids){return ids.byKey.has(row.cat+'|'+row.id)||ids.byId.has(row.id)}
-function aggregate(m){const rows=monthRec(m).filter(x=>x&&String(x.date||'').slice(0,7)===m);
+function aggregate(m){if(cloudActive&&!cloudAdmin){const report=cloudReports.get(key(platform,m));if(report)return hydratedReport(report)}const rows=monthRec(m).filter(x=>x&&String(x.date||'').slice(0,7)===m);
  const grouped=new Map(),collisions=new Set();let duplicates=0,missing=0,paymentNotes=0;
  for(const r of rows){if(!r.date||!r.cat||!r.id||!Number.isFinite(+r.qty)){missing++;continue}
    const k=[r.date,r.cat,r.id,String(r.term||'')].join('|');
@@ -135,7 +252,7 @@ function renderDesign(){const a=snapshot,groups=designGroups(),byQty=groups.slic
  ].map(x=>'<div class="highlight"><small>'+x.label+'</small><h3 class="'+x.cls+'">'+escapeHtml(x.name)+'</h3><p>'+escapeHtml(x.info)+'</p></div>').join('');
  const chosen=groups.sort((x,y)=>y[designSort]-x[designSort]);
  $('designRows').innerHTML=chosen.map((x,i)=>'<tr><td><strong>'+escapeHtml(x.name)+'</strong></td><td class="num">'+x.count+'</td><td class="num"><strong>'+pretty(x.qty)+'</strong></td><td class="num">'+dollars(x.coin/1000)+'</td><td class="num">'+pretty(x.ticket)+'</td><td>'+(i<3?'<span class="flag">重点延展观察</span>':'<span class="flag observe">持续观察</span>')+'</td></tr>').join('')||'<tr><td colspan="6">'+empty('请先登记并上传本月新品数据',true)+'</td></tr>';
- $('designCategoryRows').innerHTML=a.cats.filter(x=>CORE.includes(x.cat)).sort((a,b)=>b.newQty-a.newQty).map(c=>'<tr><td><strong>'+escapeHtml(catName(c.cat))+'</strong></td><td class="num">'+c.newSkus.size+'</td><td class="num">'+pretty(c.newQty)+'</td><td class="num">'+percent(c.newQty,c.qty)+'</td><td class="num">'+dollars(c.newCoin/1000)+'</td></tr>').join('')||'<tr><td colspan="5">'+empty('暂无数据',true)+'</td></tr>';
+ $('designCategoryRows').innerHTML=a.cats.filter(x=>CORE.includes(x.cat)).sort((a,b)=>b.newQty-a.newQty).map(c=>'<tr><td><strong>'+escapeHtml(catName(c.cat))+'</strong></td><td class="num">'+(c.newSkus?.size??c.newSkusCount??0)+'</td><td class="num">'+pretty(c.newQty)+'</td><td class="num">'+percent(c.newQty,c.qty)+'</td><td class="num">'+dollars(c.newCoin/1000)+'</td></tr>').join('')||'<tr><td colspan="5">'+empty('暂无数据',true)+'</td></tr>';
 }
 function issuesFor(a){let list=[];if(a.collisions)list.push({severity:'error',text:a.collisions+'组同日同商品存在不同统计值，已暂时排除'});if(a.missing)list.push({severity:'error',text:a.missing+'行缺少关键字段，未参与分析'});if(a.duplicates)list.push({severity:'info',text:a.duplicates+'条完全重复记录已去重'});if(a.paymentNotes)list.push({severity:'info',text:a.paymentNotes+'行的支付件数少于总销量，需核对支付方式'});
  for(const f of a.files){for(const i of (f.issues||[]).filter(x=>x.fatal).slice(0,3))list.push({severity:'error',text:f.name+' · '+i.line+'行：'+i.reason})}return list}
@@ -143,14 +260,14 @@ function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textConte
  $('archivePeriod').textContent=year+'年';
  $('monthGrid').innerHTML=Array.from({length:12},(_,i)=>{const m=year+'-'+String(i+1).padStart(2,'0'),files=archiveEntry(m)?.files||[];return '<button class="month-pill '+(files.length?'available ':'')+(m===name?'selected':'')+'" data-m="'+(i+1)+'"><strong>'+String(i+1).padStart(2,'0')+'月</strong><small>'+(files.length?files.length+' 份文件':'—')+'</small></button>'}).join('');
  $('dataDetails').innerHTML=pretty(a.rows)+' 条有效记录 · '+pretty(a.skus.length)+' 个成交 SKU';
- $('clearMonthFiles').disabled=!a.files.length;$('clearMonthFiles').title='清空'+year+'年'+month+'月已上传的全部文件';
+ $('clearMonthFiles').disabled=!cloudAdmin||!!cloudOffline||!a.files.length;$('clearMonthFiles').title='清空'+year+'年'+month+'月已上传的全部文件';
  $('fileList').innerHTML=a.files.map(f=>'<div class="file-item"><div><strong>'+escapeHtml(f.name)+'</strong><small>'+pretty((f.rows||[]).length)+' 行 · '+(f.size?pretty(Math.round(f.size/1024))+' KB':'已归档')+'</small></div><button class="text-button" data-remove="'+escapeHtml(f.name)+'">移除</button></div>').join('')||'<div class="empty compact">本月尚未上传文件</div>';
  $('launchInput').value=launchesFor(name).map(x=>x.id+(x.date?','+x.date:'')+(x.cat?','+x.cat:'')).join('\n');
  $('launchCount').textContent=launchesFor(name).length+' 个';
  const issues=issuesFor(a);$('issueCount').textContent=issues.length+' 项';
  $('issues').innerHTML=issues.map(x=>'<div class="issue">'+(x.severity==='error'?'<strong>需核对 · </strong>':'')+escapeHtml(x.text)+'</div>').join('')||'<div class="empty">未发现关键数据异常</div>';
 }
-function render(){snapshot=aggregate(ym());const a=snapshot;save(PERIOD_KEY,{year,month});syncMonthNavigators();document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.body.classList.toggle('analysis-month-view',['overview','new','design'].includes(view));document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
+function render(){snapshot=aggregate(ym());const a=snapshot;renderCloudStatus();save(PERIOD_KEY,{year,month});syncMonthNavigators();document.body.classList.toggle('show-lifecycle',view==='lifecycle');document.body.classList.toggle('analysis-month-view',['overview','new','design'].includes(view));document.querySelectorAll('.view').forEach(e=>e.hidden=e.id!=='page-'+view);document.querySelectorAll('[data-page]').forEach(e=>e.classList.toggle('active',e.dataset.page===view));
  $('crumb').textContent={overview:'经营总览',new:'新品分析',design:'设计方向',lifecycle:'动态上下架',data:'数据管理'}[view]||'经营总览';
  $('archiveCount').textContent=[...archive.values()].filter(v=>v.platform===platform&&v.files?.length).length+'个月';
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
@@ -232,7 +349,7 @@ function go(p){view=['overview','new','design','lifecycle','data'].includes(p)?p
 function refreshSelections(){const y=$('year');if(!y.options.length)for(let v=2024;v<=2030;v++)y.add(new Option(v+'年',v));y.value=year;
  const mo=$('month');if(!mo.options.length)for(let v=1;v<=12;v++)mo.add(new Option(v+'月',v));mo.value=month;
  $('platform').value=platform}
-async function syncDB(){archive=new Map((await readAll()).map(x=>[x.key,x]));refreshSelections();render()}
+async function syncDB(){if(cloudActive&&!cloudOffline)await refreshCloudData();else if(!cloudActive)archive=new Map((await localReadAll()).map(x=>[x.key,x]));refreshSelections();render()}
 function csvRows(src){src=src.replace(/^\uFEFF/,'');let out=[],row=[],cell='',quote=false;for(let i=0;i<src.length;i++){const c=src[i];if(quote){if(c==='"'&&src[i+1]==='"'){cell+='"';i++}else if(c==='"')quote=false;else cell+=c}else if(c==='"')quote=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&src[i+1]==='\n')i++;row.push(cell);if(row.some(x=>String(x).trim()))out.push(row);row=[];cell=''}else cell+=c}row.push(cell);if(row.some(x=>String(x).trim()))out.push(row);return out}
 async function fileSheets(file){const buf=await file.arrayBuffer();if(/\.csv$/i.test(file.name)){let txt=new TextDecoder('utf-8').decode(buf);if(txt.includes('\ufffd'))txt=new TextDecoder('gb18030').decode(buf);return [{name:'CSV',rows:csvRows(txt)}]}if(!window.XLSX)throw Error('Excel解析组件未加载，请刷新重试');const book=XLSX.read(buf,{type:'array'});return book.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(book.Sheets[n],{header:1,raw:true,defval:'',blankrows:false})}))}
 function detectHeader(rows){for(let i=0;i<Math.min(rows.length,40);i++){const map={};for(let j=0;j<(rows[i]||[]).length;j++){const v=norm(rows[i][j]);for(const [k,terms] of Object.entries(FIELD))if(map[k]===undefined&&terms.has(v))map[k]=j}if(map.date!==undefined&&map.name!==undefined&&(map.qty!==undefined||(map.gq!==undefined&&map.hq!==undefined)))return {row:i,map}}return null}
