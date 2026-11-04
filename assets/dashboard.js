@@ -180,6 +180,8 @@ function renderCloudStatus(){
  $('cloudLocation').textContent=cloudOffline?'云端连接异常':'云端数据空间';
  $('headerUpload').hidden=!cloudAdmin||!!cloudOffline;
  $('viewerDataPanel').hidden=cloudAdmin&&!cloudOffline;
+ $('publicLifecycleNotice').hidden=cloudAdmin&&!cloudOffline;
+ $('lifecycleEmbed').hidden=!cloudAdmin||!!cloudOffline;
  $('adminDataControls').hidden=!cloudAdmin||!!cloudOffline;
  const count=pendingLocalHistory();
  $('cloudMigrate').hidden=!cloudAdmin||!!cloudOffline||!count;
@@ -300,7 +302,7 @@ function render(){snapshot=aggregate(ym());const a=snapshot;renderCloudStatus();
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
  alertMsg(hasProblems?'当前月份存在待核验数据，请前往「数据管理」查看异常。':'');
  renderOverview();renderNew();renderDesign();renderData();
- if(view==='lifecycle')openLifecycleTab();
+ if(view==='lifecycle'&&cloudAdmin&&!cloudOffline)openLifecycleTab();
 }
 function openLifecycleTab(){
  const frame=$('lifecycleFrame');
