@@ -66,3 +66,30 @@
 #page-design.month-no-data > .dd-workspace-tabs{display:flex!important}
 #page-design.month-no-data.dd-history-mode > #designHistoryWorkspace:not([hidden]){display:block!important}
 #page-design.month-no-data.dd-history-mode > .month-empty{display:none!important}
+
+/* Historical design bulk selection – deliberately keeps existing columns intact. */
+#historyBulkBar[hidden]{display:none!important}
+.dd-history-bulkbar{display:flex;align-items:center;gap:13px;flex-wrap:wrap;border:1px solid #e3eaf7;background:#f8faff;border-radius:8px;padding:11px 13px;margin:0 0 12px}
+.dd-history-bulkinfo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:235px}
+.dd-history-bulkinfo strong{font-size:12px;color:#3f608c}
+.dd-history-bulkinfo span{font-size:11px;color:#8999ae;line-height:1.6}
+.dd-history-bulkactions{display:flex;align-items:center;gap:8px}
+.dd-history-bulkactions .button{min-height:32px;padding:7px 12px;font-size:11px}
+.dd-history-bulkactions .dd-history-deletebtn{background:#fff6f5;border:1px solid #f2d6d4;color:#bd6468;font-weight:720}
+.dd-history-bulkactions .dd-history-deletebtn:hover:not(:disabled){background:#ffefed;border-color:#e8b5b3}
+.dd-history-bulkactions button:disabled{cursor:not-allowed;opacity:.46}
+.dd-history-bulkstatus{width:100%;font-size:11px;color:#7b8ca6;line-height:1.5}
+.dd-history-bulkstatus:empty{display:none}
+.dd-history-table th.dd-history-checkcell,.dd-history-table td.dd-history-checkcell{width:48px;min-width:48px;text-align:center!important;padding-left:12px;padding-right:7px}
+.dd-history-table .dd-history-checkcell input{width:16px;height:16px;accent-color:#5879bd;cursor:pointer;vertical-align:middle;margin:0}
+.dd-history-table .dd-history-checkcell input:disabled{opacity:.45;cursor:not-allowed}
+.dd-history-unselectable{font-size:11px;color:#c3cbd6}
+.dd-history-table tr.dd-history-is-selected td{background:#f3f7ff}
+.dd-history-table tr.dd-history-is-selected:hover td{background:#edf4ff}
+.dd-history-table td:nth-child(2){min-width:155px}
+.dd-history-table td:first-child{min-width:48px}
+@media(max-width:650px){
+ .dd-history-bulkbar{align-items:flex-start;flex-direction:column}
+ .dd-history-bulkactions{width:100%;justify-content:flex-start}
+ .dd-history-bulkinfo{min-width:0}
+}
