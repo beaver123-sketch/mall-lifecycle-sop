@@ -21,6 +21,11 @@ const norm=s=>clean(s).normalize('NFKC').toLowerCase().replace(/[\s·•.,，。
 const split=s=>String(s||'').split(/[、，,；;\r\n]/).map(x=>x.trim()).filter(Boolean).slice(0,16);
 const csv=s=>{let v=String(s==null?'':s);if(/^[=+@\-\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';};
 const group=s=>{const t=norm(s);return GROUPS.find(g=>g.some(a=>t.includes(norm(a))))||null;};
+const inferObject=(name,cat)=>{
+ const text=clean(name);
+ if(cat==='座驾'&&/布加迪|宝马|奥迪|奔驰|保时捷|法拉利|兰博基尼/i.test(text))return '';
+ return group(text)?.[0]||'';
+};
 let ctx=null,tags=[],entries=[],loaded=false,loadError='',loading=false,pane='brief';
 let query='',catFilter='',statusFilter='',limit=60,allRendered=[],editing=null;
 function baseRows(){
@@ -30,7 +35,7 @@ function baseRows(){
    const cat=s.cat,id=String(s.id||'');
    if(!CATS.includes(cat)||!id)return;
    const k=cat+'|'+id;
-   if(!map.has(k))map.set(k,{row_key:k,category:cat,sku_id:id,name:clean(s.name),design_object:'',
+   if(!map.has(k))map.set(k,{row_key:k,category:cat,sku_id:id,name:clean(s.name),design_object:inferObject(s.name,cat),
     theme:'',elements:[],status:'历史成交',source:'上传订单（月报）',first_seen:item.period,last_seen:item.period,months:new Set(),entry_id:null,notes:'',sales:true});
    const row=map.get(k);
    if(item.period<row.first_seen)row.first_seen=item.period;
