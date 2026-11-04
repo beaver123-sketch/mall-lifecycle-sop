@@ -93,9 +93,21 @@
       .eq('category',category).eq('sku_id',String(skuId));
     fail('删除商品设计标签',error);
   }
+  async function listRideSettings() {
+    if(!client)throw Error('云端服务尚未初始化');
+    const rows=await fetchPaged('mall_design_ride_settings','platform,excluded_names,tier_prices,updated_at');
+    return rows;
+  }
+  async function putRideSettings(platform,excludedNames,tierPrices){
+    requireAdmin();
+    const {error}=await client.from('mall_design_ride_settings').upsert({
+      platform,excluded_names:excludedNames||[],tier_prices:tierPrices||{},updated_at:new Date().toISOString()
+    },{onConflict:'platform'});
+    fail('保存座驾分级定价及历史排除配置',error);
+  }
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
-    listDesignTags,putDesignTag,removeDesignTag,
+    listDesignTags,putDesignTag,removeDesignTag,listRideSettings,putRideSettings,
     get isAdmin(){return isAdmin},
     get user(){return user}
   });
