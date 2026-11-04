@@ -206,3 +206,5 @@ body.analysis-month-view .page-head{margin-bottom:22px}
 
 /* The shared site never exposes backup/restore operations to anonymous viewers. */
 .cloud-readonly #page-data #backup,.cloud-readonly #page-data #restoreButton{display:none!important}
+
+#page-lifecycle #publicLifecycleNotice{margin:8px 0 18px;padding:28px 30px}
