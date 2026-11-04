@@ -379,7 +379,10 @@ function syncMonthNavigators(){
   const node=$('page-'+page);
   node.classList.toggle('month-no-data',missing);
   const empty=node.querySelector('.month-empty');
-  if(empty)empty.hidden=!missing;
+  if(empty){
+   empty.hidden=!missing;
+   if(missing&&cloudActive&&!cloudOffline&&!cloudAdmin)empty.firstChild.textContent='该月尚未发布共享数据，请选择其他月份或联系管理员同步。';
+  }
  }
 }
 
@@ -503,7 +506,15 @@ async function init(){
   db=connection;
   localHistoryKeys=new Set((await localReadAll()).filter(x=>x.files?.length).map(x=>x.key));localHistoryCount=localHistoryKeys.size;
   cloudActive=true;
-  try{const data=await window.MallCloud.init();cloudAdmin=data.isAdmin;await refreshCloudData()}
+  try{
+   const data=await window.MallCloud.init();cloudAdmin=data.isAdmin;await refreshCloudData();
+   // On a first-time visitor's browser show the latest published period.
+   if(!Object.keys(period).length&&cloudReports.size){
+    const available=[...cloudReports.keys()].filter(k=>k.startsWith(platform+'|')).map(k=>k.split('|')[1]).sort();
+    const newest=available.at(-1);
+    if(newest){year=Number(newest.slice(0,4));month=Number(newest.slice(5))}
+   }
+  }
   catch(err){cloudOffline=err.message||String(err);archive=new Map();cloudReports=new Map();cloudAdmin=false}
   refreshSelections();render();document.documentElement.dataset.mallReady='true';
  });
