@@ -180,7 +180,8 @@ function renderRecommendations(data){
    '<div class="dd-tags">'+r.keywords.map(k=>'<span>'+escape(k)+'</span>').join('')+'</div>'+
    (r.kind==='set'?'<p class="dd-idea">'+escape(r.idea)+'</p>':'')+parts+
    (r.kind==='set'?'<div class="dd-effect"><b>套装动效方向</b> '+escape(r.effect)+'</div>':'')+
-   '<div class="dd-proof"><strong>历史销量参考</strong><p>'+escape(r.evidence.info)+'</p></div></article>';
+   '<div class="dd-proof"><strong>历史销量参考</strong><p>'+escape(r.evidence.info)+'</p></div>'+
+   (ctx?.admin?'<div class="dd-register-wrap"><button class="button light dd-register" data-design-register="'+i+'" type="button">登记为待设计 · 加入历史库</button></div>':'')+'</article>';
  }).join('')||'<div class="dd-empty">候选库中可推荐的设计已被历史查重过滤，请补充新的具体设计对象，或校对历史库标注。</div>';
  const supported=selected.filter(r=>r.evidence.cls!=='idea').length;
  $('designRecommendNotice').textContent='已生成 '+selected.length+(mode==='set'?' 套统一主题装扮（每套包含头像框、资料卡、派对背景、聊天气泡，共 '+(selected.length*4)+' 个品类设计）':' 款独立载具设计（严格区分普通商品礼物）')+
@@ -276,6 +277,17 @@ $('designRecommendCat').addEventListener('change',()=>{round=0;renderAll()});
 $('designRecommendCount').addEventListener('change',()=>{round=0;renderAll()});
 $('designRegenerate').addEventListener('click',()=>{round++;renderAll()});
 $('designExportBrief').addEventListener('click',downloadCsv);
+$('designRecommendCards').addEventListener('click',async e=>{
+ const button=e.target.closest('[data-design-register]');if(!button||!ctx?.admin)return;
+ const chosen=selected[Number(button.dataset.designRegister)];if(!chosen)return;
+ button.disabled=true;button.textContent='正在登记…';
+ try{await window.MallDesignHistory.registerRecommendation(chosen);}
+ catch(err){
+  const note=$('designHistoryExclusions');if(note)note.textContent='设计登记失败：'+err.message;
+  button.disabled=false;button.textContent='登记为待设计 · 加入历史库';
+ }
+});
+
 $('designTagSave').addEventListener('click',saveTag);
 $('designTagSku').addEventListener('change',()=>fillTag($('designTagCat').value,$('designTagSku').value.trim()));
 $('designTagCat').addEventListener('change',()=>fillTag($('designTagCat').value,$('designTagSku').value.trim()));
