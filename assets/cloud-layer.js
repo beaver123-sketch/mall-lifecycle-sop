@@ -140,10 +140,31 @@
     const {error}=await client.from('mall_design_history_entries').delete().eq('entry_id',entryId);
     fail('删除手动登记的历史设计',error);
   }
+  async function listDesignReferences(){
+    if(!client)throw Error('云端服务尚未初始化');
+    return fetchPaged('mall_design_references','platform,design_kind,design_name,category,pin_url,image_url,note,updated_at');
+  }
+  async function putDesignReference(item){
+    requireAdmin();
+    const {error}=await client.from('mall_design_references').upsert({
+      platform:item.platform,design_kind:item.design_kind,design_name:item.design_name,
+      category:item.category,pin_url:item.pin_url,image_url:item.image_url||'',note:item.note||'',
+      updated_at:new Date().toISOString()
+    },{onConflict:'platform,design_kind,design_name,category'});
+    fail('保存花瓣设计参考',error);
+  }
+  async function removeDesignReference(item){
+    requireAdmin();
+    const {error}=await client.from('mall_design_references').delete()
+      .eq('platform',item.platform).eq('design_kind',item.design_kind)
+      .eq('design_name',item.design_name).eq('category',item.category);
+    fail('移除花瓣设计参考',error);
+  }
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
     listDesignTags,putDesignTag,removeDesignTag,listRideSettings,putRideSettings,
     listDesignHistory,putDesignHistory,putDesignHistoryBatch,removeDesignHistory,
+    listDesignReferences,putDesignReference,removeDesignReference,
     get isAdmin(){return isAdmin},
     get user(){return user}
   });
