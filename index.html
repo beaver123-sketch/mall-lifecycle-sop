@@ -6,12 +6,13 @@
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
 <link rel="stylesheet" href="assets/dashboard.css?v=20261104-cloud-v1">
-<link rel="stylesheet" href="assets/design-direction.css?v=20261104-sets-v2">
+<link rel="stylesheet" href="assets/design-direction.css?v=20261104-ride-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0" defer></script>
-<script src="assets/cloud-layer.js?v=20261104-design-v1" defer></script>
+<script src="assets/cloud-layer.js?v=20261104-ride-v1" defer></script>
 <script src="assets/dashboard.js?v=20261104-design-v1" defer></script>
-<script src="assets/design-direction.js?v=20261104-sets-v2" defer></script>
+<script src="assets/ride-briefs.js?v=20261104-ride-v1" defer></script>
+<script src="assets/design-direction.js?v=20261104-ride-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -83,10 +84,31 @@
           <div class="panel-head"><div><div class="dd-title-line"><h2>商城设计方向智能推荐</h2><span class="dd-version">设计提需</span></div><div class="subtle">主题统一 · 四品类分工 · 座驾独立 · 历史销售依据</div></div><span class="dd-muted" id="designLabelState">正在读取设计标签…</span></div>
           <div class="dd-controls">
             <label>设计提需类型<select id="designRecommendCat"><option value="set" selected>主题装扮套装（四品类）</option><option value="vehicle">座驾（独立设计）</option></select></label>
+            <label id="rideTierBox" hidden>座驾售卖等级<select id="rideTier"><option value="basic">基础款 · 5–6s</option><option value="advanced" selected>进阶款 · 7–8s</option><option value="premium">高阶款 · 9–10s</option></select></label>
             <label><span id="designRecommendCountTitle">主题套数</span><select id="designRecommendCount"><option value="2">2 套</option><option value="3">3 套</option><option value="4" selected>4 套</option><option value="5">5 套</option><option value="6">6 套</option><option value="8">8 套</option></select></label>
             <div class="dd-control-actions"><button type="button" class="button light" id="designRegenerate">↻ 换一批设计</button><button type="button" class="button primary" id="designExportBrief">导出设计提需 CSV</button></div>
           </div>
           <div class="dd-summary" id="designRecommendNotice">以一整套主题为单位推荐：头像框、资料卡、派对背景、聊天气泡使用相同主题；座驾单独提需。</div>
+          <div class="dd-ride-past" id="ridePastBox" hidden>
+            <div class="dd-ride-past-top"><strong>历史座驾排重</strong><span id="ridePastCount">正在核对历史记录…</span></div>
+            <p id="ridePastNames"></p>
+            <div class="dd-ride-legend">已成交的历史商品自动排除；已提需但尚未成交的款式可在管理员名单中补充。只通过名称与设计对象核验，无法保证识别全部视觉相似款，最终需美术复核。</div>
+            <div class="dd-ride-tier-hint" id="rideTierHint"></div>
+          </div>
+          <details class="dd-ride-settings" id="rideSettingsPanel" hidden>
+            <summary><span>座驾分级售价 & 已制作排除名单</span><span>仅管理员配置</span></summary>
+            <div class="dd-ride-settings-body">
+              <div class="dd-ride-price-table">
+                <div class="dd-price-head">等级</div><div class="dd-price-head">时长</div><div class="dd-price-head">金币售价</div><div class="dd-price-head">荣誉券售价（可选）</div>
+                <strong>基础款</strong><span>5–6s</span><input id="ridePrice_basic_coin" type="number" min="1" step="1" placeholder="待配置"><input id="ridePrice_basic_ticket" type="number" min="1" step="1" placeholder="待配置">
+                <strong>进阶款</strong><span>7–8s</span><input id="ridePrice_advanced_coin" type="number" min="1" step="1" placeholder="待配置"><input id="ridePrice_advanced_ticket" type="number" min="1" step="1" placeholder="待配置">
+                <strong>高阶款</strong><span>9–10s</span><input id="ridePrice_premium_coin" type="number" min="1" step="1" placeholder="待配置"><input id="ridePrice_premium_ticket" type="number" min="1" step="1" placeholder="待配置">
+              </div>
+              <p class="dd-footnote">同一支付方式的三级售价必须满足基础款 ＜ 进阶款 ＜ 高阶款。实际售价由管理员填写；未确认前不生成虚构价格。</p>
+              <label class="dd-ride-exclusion-label">额外排除已制作座驾（每行一个名称或明确设计对象）<textarea id="rideManualExclude" rows="4" placeholder="例如：内部已设计但尚未上线的座驾名称；每行一条"></textarea></label>
+              <div class="dd-ride-savebar"><button class="button primary" id="rideSettingsSave" type="button">保存云端配置</button><span id="rideSettingsStatus">等待配置</span></div>
+            </div>
+          </details>
           <div class="dd-cards" id="designRecommendCards"></div>
           <p class="dd-footnote">说明：一套装扮包含头像框、资料卡、派对背景、聊天气泡，共四个品类；座驾单独设计。创意名称与关键词来自预设方向库，销售依据来自当前平台近 3 个已发布月份的实际订单汇总，标签不足时不会虚构推荐依据。</p>
         </section>
