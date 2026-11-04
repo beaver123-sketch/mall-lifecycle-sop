@@ -14,6 +14,7 @@ jobs:
         run: |
           node --check assets/dashboard.js
           node --check assets/design-direction.js
+          node --check assets/design-history.js
           node --check assets/ride-briefs.js
           node --check assets/cloud-layer.js
       - name: Check required pages
@@ -21,6 +22,7 @@ jobs:
           test -s index.html
           test -s lifecycle.html
           test -s assets/dashboard.css
+          test -s assets/design-history.css
           test -s cloud-admin.html
           test -s assets/cloud-admin.js
           node --check assets/cloud-admin.js
@@ -52,6 +54,10 @@ jobs:
               'listDesignTags:async()=>Object.values(read().tags||{}),',
               'putDesignTag:async(tag)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.tags??={};s.tags[tag.platform+"|"+tag.category+"|"+tag.sku_id]=tag;save(s)},',
               'removeDesignTag:async(p,c,id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.tags?.[p+"|"+c+"|"+id];save(s)},',
+              'listDesignHistory:async()=>Object.values(read().designHistory||{}),',
+              'putDesignHistory:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};const id=item.entry_id||"test-h-"+Object.keys(s.designHistory).length;s.designHistory[id]={...item,entry_id:id};save(s)},',
+              'putDesignHistoryBatch:async(items)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};items.forEach((item,i)=>{const id="test-b-"+(Object.keys(s.designHistory).length+i);s.designHistory[id]={...item,entry_id:id}});save(s)},',
+              'removeDesignHistory:async(id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.designHistory?.[id];save(s)},',
               'listRideSettings:async()=>Object.values(read().rideSettings||{}),',
               'putRideSettings:async(p,excluded_names,tier_prices)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.rideSettings??={};s.rideSettings[p]={platform:p,excluded_names,tier_prices};save(s)},',
               'removeSources:async()=>{if(!'+admin+')throw Error("guest denied")}',
@@ -70,6 +76,18 @@ jobs:
               ].join(String.fromCharCode(10));
               await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv,'utf8')});
               await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:20000});
+              // Historical registry remains in the design page and can be read without a new sidebar item.
+              await page.locator('a[data-page="design"]').click();
+              await page.locator('[data-history-pane="history"]').click();
+              await page.waitForFunction(()=>document.querySelectorAll('#historyRows tr').length>=2,null,{timeout:10000});
+              if(!(await page.locator('#historyRows').innerText()).includes('Candy Cute Ghost'))throw Error('Uploaded SKU missing from history');
+              await page.locator('#historyAdd').click();
+              await page.locator('#historyFormName').fill('凤凰涅槃');
+              await page.locator('#historyFormObject').fill('凤凰');
+              await page.locator('#historyFormStatus').selectOption('已完成');
+              await page.locator('#historyForm').locator('[type="submit"]').click();
+              await page.waitForFunction(()=>window.MallDesignHistory?.check({kind:'set',name:'凤凰涅槃'})?.blocked===true,null,{timeout:10000});
+              await page.locator('[data-history-pane="brief"]').click();
               // One brief represents a full four-category theme set, not one independent SKU.
               await page.locator('a[data-page="design"]').click();
               await page.waitForFunction(()=>document.querySelectorAll('#designRecommendCards .dd-card').length===4,null,{timeout:10000});
