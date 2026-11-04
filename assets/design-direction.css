@@ -1,0 +1,74 @@
+/* Sales-grounded Design Direction module */
+.dd-panel{margin-bottom:18px!important}
+.dd-panel .panel-head{margin-bottom:14px}
+.dd-panel .panel-head h2{margin:0}
+.dd-muted{color:#8b96aa;font-size:12px;line-height:1.65}
+.dd-title-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dd-version{font-size:10px;background:#eef3ff;color:#5671bf;padding:4px 7px;border-radius:5px;letter-spacing:.02em}
+.dd-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin:18px 0 14px}
+.dd-controls label{display:flex;flex-direction:column;gap:7px;color:#77839a;font-size:11px;font-weight:650}
+.dd-controls select{border:1px solid #e2e8f1;border-radius:8px;background:#fff;color:#26344b;padding:9px 12px;min-height:36px;min-width:155px;outline:0}
+.dd-controls select:focus,.dd-editor input:focus,.dd-editor select:focus,.dd-admin-head input:focus{border-color:#7896df;box-shadow:0 0 0 3px #eff3ff}
+.dd-controls #designRecommendCount{min-width:110px}
+.dd-control-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.dd-control-actions button,.dd-editor button{min-height:36px}
+.dd-summary{padding:10px 13px;border-radius:8px;background:#f6f8fc;border:1px solid #edf1f6;color:#66758c;font-size:11px;line-height:1.6;margin-bottom:17px}
+.dd-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dd-card{display:flex;flex-direction:column;min-width:0;border:1px solid #e7ecf4;border-radius:12px;padding:20px 21px 17px;background:linear-gradient(160deg,#fff 55%,#fafbff 100%);transition:box-shadow .15s,border-color .15s}
+.dd-card:hover{border-color:#d5dff0;box-shadow:0 9px 24px rgba(42,58,95,.055)}
+.dd-card-top{display:flex;align-items:center;gap:8px;min-height:24px;flex-wrap:wrap}
+.dd-index{color:#b3bece;font-weight:800;letter-spacing:.05em;font-size:13px;margin-right:2px}
+.dd-category{font-size:10px;background:#f1f4f8;color:#69768c;border-radius:5px;padding:5px 7px}
+.dd-evidence{margin-left:auto;border-radius:5px;font-size:10px;padding:5px 8px;white-space:nowrap;background:#f2f4f8;color:#8894a6}
+.dd-evidence.strong{background:#eaf7f1;color:#35856e}
+.dd-evidence.limited{background:#fff6e8;color:#b08441}
+.dd-card h3{font-size:20px;line-height:1.35;letter-spacing:.02em;margin:17px 0 12px;font-weight:780;color:#25324d}
+.dd-tags{display:flex;gap:6px;flex-wrap:wrap;min-height:25px}
+.dd-tags span{background:#eef3fd;color:#5875af;border-radius:5px;padding:6px 9px;font-size:11px}
+.dd-idea{font-size:12px;line-height:1.8;color:#5d6b80;margin:15px 0 9px;flex:1}
+.dd-effect{font-size:11px;line-height:1.7;color:#6d7a8e;margin:0 0 14px}
+.dd-effect b{font-weight:680;color:#667992;margin-right:7px}
+.dd-proof{border-top:1px solid #ecf0f6;padding-top:13px;margin-top:auto}
+.dd-proof strong{font-size:11px;color:#6f7c90;font-weight:650}
+.dd-proof p{font-size:11px;line-height:1.65;color:#99a4b5;margin:7px 0 0;overflow-wrap:anywhere}
+.dd-footnote{color:#8793a4;font-size:11px;line-height:1.7;margin:13px 0 0}
+.dd-section-head{color:#60718e;font-size:12px;font-weight:700;margin:24px 0 12px;letter-spacing:.01em}
+.dd-table{width:100%;min-width:900px}
+.dd-table .num{text-align:right;white-space:nowrap}
+.dd-table td{vertical-align:top}
+.dd-cat{display:block;font-size:10px;color:#9ca7b7;margin-top:4px}
+.dd-source{font-size:11px;color:#8391a5;line-height:1.7;max-width:320px}
+.dd-empty{color:#9da9b8;font-size:11px;padding:16px 12px;line-height:1.6}
+.dd-admin{display:block;margin:18px 0 21px;border:1px solid #e4eaf3;border-radius:12px;background:#fff;overflow:hidden}
+.dd-admin[hidden]{display:none!important}
+.dd-admin summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:17px 21px;font-size:13px;color:#263957;font-weight:750;cursor:pointer}
+.dd-admin summary::after{content:'展开 / 收起';font-size:11px;color:#8592a5;font-weight:500}
+.dd-admin summary::-webkit-details-marker{display:none}
+.dd-admin-body{padding:0 21px 20px;border-top:1px solid #eef1f6}
+.dd-admin-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:18px 0 10px}
+.dd-admin-head h3{font-size:12px;margin:0;color:#5d6e86}
+.dd-admin-head input,.dd-editor input,.dd-editor select{padding:9px 11px;min-height:36px;border:1px solid #e2e8f1;border-radius:8px;outline:0;width:100%;color:#243450;background:#fff}
+.dd-admin-head input{width:220px}
+.dd-editor{display:grid;grid-template-columns:145px 120px 145px minmax(150px,1fr) minmax(170px,1fr) auto;gap:10px;align-items:end;margin-top:15px}
+.dd-editor label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#7d8ba0;font-weight:650;min-width:0}
+.dd-editor .button{white-space:nowrap}
+.dd-editor-status{min-height:26px;font-size:11px;color:#8d98aa;padding-top:9px}
+.dd-untagged{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
+.dd-untagged button{border:1px solid #e8ecf4;background:#f9fbfe;color:#687d9b;border-radius:7px;padding:7px 10px;font-size:11px;text-align:left}
+.dd-untagged button:hover{border-color:#c8d6f1;background:#f1f5ff}
+.dd-untagged small{color:#a2aebe}
+.dd-tag-list{max-height:270px;overflow:auto;border:1px solid #edf0f5;border-radius:9px}
+.dd-tag-row{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:11px 13px;border-bottom:1px solid #f0f2f7}
+.dd-tag-row:last-child{border-bottom:0}
+.dd-tag-row strong{font-size:11px;color:#425473}
+.dd-tag-row small{color:#9ba7b7;font-size:10px;margin-left:4px}
+.dd-tag-row p{margin:6px 0 0;color:#8d9aae;font-size:10px;line-height:1.5}
+.dd-tag-actions{display:flex;gap:8px;flex-shrink:0}
+.dd-tag-actions button{border:none;background:#f3f6fb;color:#6f80a4;padding:6px 9px;border-radius:5px;font-size:11px}
+.dd-tag-actions button:last-child{background:#fdf3f1;color:#b47268}
+.dd-tag-actions button:disabled{opacity:.5;cursor:default}
+#page-design .dd-recommend-panel{margin-top:2px}
+#page-design .dd-theme-panel{margin-top:18px}
+@media(max-width:1150px){.dd-editor{grid-template-columns:repeat(3,minmax(0,1fr))}.dd-control-actions{margin-left:0}}
+@media(max-width:800px){.dd-cards{grid-template-columns:1fr}.dd-controls{align-items:stretch}.dd-control-actions{width:100%}.dd-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.dd-admin-head{align-items:flex-start;flex-direction:column}.dd-admin-head input{width:100%}}
+@media(max-width:540px){.dd-card{padding:16px}.dd-card h3{font-size:18px}.dd-editor{grid-template-columns:1fr}.dd-controls select{width:100%}.dd-evidence{margin-left:0}.dd-admin summary,.dd-admin-body{padding-left:14px;padding-right:14px}.dd-control-actions button{flex:1}}
