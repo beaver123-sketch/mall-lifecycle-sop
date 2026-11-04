@@ -210,12 +210,13 @@ function renderRecommendations(data){
  const suffix=mode==='vehicle'?'款':'套';
  Array.from($('designRecommendCount').options).forEach(o=>o.textContent=o.value+' '+suffix);
  selected=makeRecommendations(data);
+ window.MallDesignCurrentSelection=selected;
  $('designRecommendCards').classList.toggle('dd-rides',mode==='vehicle');
  $('designRecommendCards').innerHTML=selected.map((r,i)=>{
   const type=r.kind==='set'?'主题套装 · 四品类':'独立座驾 · 具备载具属性';
   const parts=r.kind==='set'?'<div class="dd-variant-heading">同一主题下的四个品类设计</div><div class="dd-variants">'+SET_CATS.map(cat=>
-   '<div class="dd-variant"><strong>'+escape(cat)+'</strong><p>'+escape(r.variants[cat])+'</p></div>'
-  ).join('')+'</div>':engine.card(r);
+   '<div class="dd-variant"><strong>'+escape(cat)+'</strong><p>'+escape(r.variants[cat])+'</p>'+window.MallHuabanReferences.referenceMarkup(r,cat)+'</div>'
+  ).join('')+'</div>':engine.card(r)+window.MallHuabanReferences.referenceMarkup(r,'座驾');
   return '<article class="dd-card"><div class="dd-card-top"><span class="dd-index">'+String(i+1).padStart(2,'0')+'</span>'+
    '<span class="dd-category">'+type+'</span><span class="dd-evidence '+r.evidence.cls+'">'+escape(r.evidence.name)+'</span></div>'+
    '<h3>'+escape(r.name)+'</h3><div class="dd-palette">'+(r.kind==='set'?'统一配色：':'配色：')+escape(r.palette)+'</div>'+
@@ -300,14 +301,15 @@ function downloadCsv(){
  if(!selected.length)return;
  const vehicle=selected[0]?.kind==='vehicle';
  const headers=vehicle?
-  ['方案类型','设计名称','品类','设计对象','设计类型','设计题材','配色','核心关键词','载具结构','设计要求','等级','时长档位','精确时长','金币售价','荣誉券售价','分段动画说明','销售判断','历史销售依据']:
-  ['方案类型','主题名称','品类','设计题材','统一配色','核心关键词','统一设计构想','该品类设计说明','动效方向','销售判断','历史销售依据'];
+  ['方案类型','设计名称','品类','设计对象','设计类型','设计题材','配色','核心关键词','载具结构','设计要求','等级','时长档位','精确时长','金币售价','荣誉券售价','分段动画说明','销售判断','历史销售依据','花瓣参考图链接（已选）','参考图预览URL','花瓣搜索入口（待选）','参考重点']:
+  ['方案类型','主题名称','品类','设计题材','统一配色','核心关键词','统一设计构想','该品类设计说明','动效方向','销售判断','历史销售依据','花瓣参考图链接（已选）','参考图预览URL','花瓣搜索入口（待选）','参考重点'];
  const rows=[headers];
  selected.forEach(r=>{
-  if(r.kind==='set')SET_CATS.forEach(cat=>rows.push(['主题套装',r.name,cat,r.theme,r.palette,r.keywords.join(' / '),r.idea,r.variants[cat],r.effect,r.evidence.name,r.evidence.info]));
+  if(r.kind==='set')SET_CATS.forEach(cat=>{const ref=window.MallHuabanReferences.referenceMeta(r,cat);rows.push(['主题套装',r.name,cat,r.theme,r.palette,r.keywords.join(' / '),r.idea,r.variants[cat],r.effect,r.evidence.name,r.evidence.info,ref.pin_url,ref.image_url,ref.search_url,ref.note]);});
   else {
    const [grade,duration,total,coin,ticket,kind,object,structure,requirements,scenes]=window.MallRideEngine.exportRow(r);
-   rows.push(['独立座驾',r.name,'座驾',object,kind,r.theme,r.palette,r.keywords.join(' / '),structure,requirements,grade,duration,total,coin,ticket,scenes,r.evidence.name,r.evidence.info]);
+   const ref=window.MallHuabanReferences.referenceMeta(r,'座驾');
+   rows.push(['独立座驾',r.name,'座驾',object,kind,r.theme,r.palette,r.keywords.join(' / '),structure,requirements,grade,duration,total,coin,ticket,scenes,r.evidence.name,r.evidence.info,ref.pin_url,ref.image_url,ref.search_url,ref.note]);
   }
  });
  const blob=new Blob(['\uFEFF'+rows.map(row=>row.map(csv).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
@@ -344,11 +346,13 @@ $('designTagList').addEventListener('click',async e=>{
 });
 window.addEventListener('mall:ride-refresh',()=>{if(ctx)renderAll()});
 window.addEventListener('mall:design-history-change',()=>{if(ctx)renderAll()});
+window.addEventListener('mall:huaban-refs-updated',()=>{if(ctx)renderRecommendations(metrics())});
 window.addEventListener('mall:design-render',e=>{
  const changed=!ctx||ctx.platform!==e.detail.platform||ctx.period!==e.detail.period;
  ctx=e.detail;if(changed)round=0;
  window.MallDesignHistory?.setContext(ctx);
  window.MallRideEngine?.setContext(ctx);
+ window.MallHuabanReferences?.setContext(ctx);
  renderAll();if(!loaded&&!loading)loadTags();
 });
 })();
