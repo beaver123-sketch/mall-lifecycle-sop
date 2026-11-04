@@ -203,3 +203,6 @@ body.analysis-month-view .page-head{margin-bottom:22px}
  .cloud-migrate .button{width:100%}
  .cloud-status{line-height:1.6}
 }
+
+/* The shared site never exposes backup/restore operations to anonymous viewers. */
+.cloud-readonly #page-data #backup,.cloud-readonly #page-data #restoreButton{display:none!important}
