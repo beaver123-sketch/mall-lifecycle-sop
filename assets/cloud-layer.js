@@ -123,6 +123,18 @@
       {onConflict:entry.entry_id?'entry_id':'platform,category,sku_id'});
     fail('保存历史设计记录',error);
   }
+  async function putDesignHistoryBatch(items) {
+    requireAdmin();
+    if(!Array.isArray(items)||!items.length)throw Error('没有需要登记的设计');
+    const payload=items.map(item=>({
+      platform:item.platform,category:item.category,sku_id:item.sku_id||null,
+      name:item.name,design_object:item.design_object||'',theme:item.theme||'',
+      elements:item.elements||[],status:item.status||'待设计',
+      notes:String(item.notes||'').slice(0,500),updated_at:new Date().toISOString()
+    }));
+    const {error}=await client.from('mall_design_history_entries').insert(payload);
+    fail('批量登记设计需求',error);
+  }
   async function removeDesignHistory(entryId) {
     requireAdmin();
     const {error}=await client.from('mall_design_history_entries').delete().eq('entry_id',entryId);
@@ -131,7 +143,7 @@
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
     listDesignTags,putDesignTag,removeDesignTag,listRideSettings,putRideSettings,
-    listDesignHistory,putDesignHistory,removeDesignHistory,
+    listDesignHistory,putDesignHistory,putDesignHistoryBatch,removeDesignHistory,
     get isAdmin(){return isAdmin},
     get user(){return user}
   });
