@@ -30,7 +30,27 @@ jobs:
           const {chromium}=require('playwright-core');
           (async()=>{
             const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+            const cloudStub=(admin)=>[
+              '(function(){',
+              'const KEY="mall-test-cloud-storage";',
+              'const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return {}}};',
+              'const save=s=>localStorage.setItem(KEY,JSON.stringify(s));',
+              'const pub=()=>Object.values(read().reports||{});',
+              'const priv=()=>Object.values(read().archives||{});',
+              'window.MallCloud={',
+              'get isAdmin(){return '+admin+'},',
+              'init:async()=>({isAdmin:'+admin+',user:'+admin+'?{id:"e2e-admin"}:null,reports:pub(),archives:'+admin+'?priv():[],quarters:[]}),',
+              'refresh:async()=>({isAdmin:'+admin+',user:'+admin+'?{id:"e2e-admin"}:null,reports:pub(),archives:'+admin+'?priv():[],quarters:[]}),',
+              'putArchive:async(platform,period,archive)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.archives??={};s.archives[platform+"|"+period]={platform,period,archive};save(s)},',
+              'putReport:async(platform,period,report)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.reports??={};s.reports[platform+"|"+period]={platform,period,report};save(s)},',
+              'removeReport:async(platform,period)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.reports?.[platform+"|"+period];save(s)},',
+              'uploadSource:async(file,platform)=>{if(!'+admin+')throw Error("guest denied");return platform+"/"+file.name},',
+              'removeSources:async()=>{if(!'+admin+')throw Error("guest denied")}',
+              '};',
+              '})();'
+            ].join('\n');
             const page=await browser.newPage();
+            await page.route('**/assets/cloud-layer.js*',route=>route.fulfill({status:200,contentType:'text/javascript',body:cloudStub(true)}));
             try{
               await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:30000});
               await page.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
@@ -170,8 +190,23 @@ jobs:
               if(!(await page.locator('#launchCount').innerText()).includes('20 个'))throw Error('Bulk clear unexpectedly deleted October launch IDs');
               await page.locator('#month').selectOption('9');
               if((await page.locator('#fileList [data-remove]').count())!==1)throw Error('Bulk clear unexpectedly removed September file');
+              // A separate browser receives only published reports, not admin's parsed row archives.
+              const sharedReports=await page.evaluate(()=>localStorage.getItem('mall-test-cloud-storage'));
+              const guestContext=await browser.newContext();
+              const guest=await guestContext.newPage();
+              await guest.addInitScript(snapshot=>localStorage.setItem('mall-test-cloud-storage',snapshot),sharedReports);
+              await guest.route('**/assets/cloud-layer.js*',route=>route.fulfill({status:200,contentType:'text/javascript',body:cloudStub(false)}));
+              await guest.goto('http://127.0.0.1:8765/#overview',{waitUntil:'domcontentloaded',timeout:30000});
+              await guest.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
+              await guest.locator('#month').selectOption('9');
+              if(!(await guest.locator('#overviewMetrics').innerText()).includes('3'))throw Error('Guest cannot see published month report');
+              if(await guest.locator('#headerUpload').isVisible())throw Error('Guest can see upload button');
+              await guest.locator('a[data-page="data"]').click();
+              if(await guest.locator('#adminDataControls').isVisible())throw Error('Guest can see private data controls');
+              if(!(await guest.locator('#viewerDataPanel').isVisible()))throw Error('Guest must see read-only access');
+              await guestContext.close();
               await page.locator('a[data-page="overview"]').click();
-              console.log('PASS: no-dialog single/bulk file removal, monthly isolation and five-tab navigation.');
+              console.log('PASS: cloud analytics sharing, guest read-only access, month isolation, and direct deletion.');
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
