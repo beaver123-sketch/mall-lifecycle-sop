@@ -7,12 +7,14 @@
 <title>商城数据中心 · POPPO</title>
 <link rel="stylesheet" href="assets/dashboard.css?v=20261104-cloud-v1">
 <link rel="stylesheet" href="assets/design-direction.css?v=20261104-ride-v1">
+<link rel="stylesheet" href="assets/design-history.css?v=20261104-history-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0" defer></script>
-<script src="assets/cloud-layer.js?v=20261104-ride-v1" defer></script>
+<script src="assets/cloud-layer.js?v=20261104-history-v1" defer></script>
 <script src="assets/dashboard.js?v=20261104-design-v1" defer></script>
 <script src="assets/ride-briefs.js?v=20261104-ride-v1" defer></script>
-<script src="assets/design-direction.js?v=20261104-ride-v1" defer></script>
+<script src="assets/design-history.js?v=20261104-history-v1" defer></script>
+<script src="assets/design-direction.js?v=20261104-history-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -109,6 +111,7 @@
               <div class="dd-ride-savebar"><button class="button primary" id="rideSettingsSave" type="button">保存云端配置</button><span id="rideSettingsStatus">等待配置</span></div>
             </div>
           </details>
+          <div id="designHistoryExclusions" role="status">正在核对历史设计题材库…</div>
           <div class="dd-cards" id="designRecommendCards"></div>
           <p class="dd-footnote">说明：一套装扮包含头像框、资料卡、派对背景、聊天气泡，共四个品类；座驾单独设计。创意名称与关键词来自预设方向库，销售依据来自当前平台近 3 个已发布月份的实际订单汇总，标签不足时不会虚构推荐依据。</p>
         </section>
