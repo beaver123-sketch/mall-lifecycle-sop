@@ -131,7 +131,8 @@ async function syncLocalHistory(){
  if(!cloudAdmin||cloudOffline){notify('请先登录管理员身份',true);return}
  const btn=$('syncLocalCloud');
  btn.disabled=true;
- let uploaded=0,skipped=0;
+ let uploaded=0,skipped=0,rawCount=0,unavailableCount=0;
+ const copiedSources=new Map();
  try {
   const history=await localReadAll();
   const legacyLaunches=load(LAUNCH_KEY);
@@ -146,12 +147,26 @@ async function syncLocalHistory(){
    btn.textContent='正在同步 '+item.ym+'…';
    const launches=Object.prototype.hasOwnProperty.call(legacyLaunches,k)?
     legacyLaunches[k]:initialLaunches(item.platform,item.ym);
-   await writeOne({...item,launches,files:item.files.map(f=>({...f,blob:undefined}))});
+   const entries=[];
+   for(const f of item.files){
+    const saved={...f,blob:undefined};
+    if(!saved.storagePath&&f.blob&&f.blob.size){
+     const signature=item.platform+'|'+f.name+'|'+f.size+'|'+(f.blob.lastModified||0);
+     if(!copiedSources.has(signature)){
+      const original=f.blob instanceof File?f.blob:new File([f.blob],f.name||'历史订单.xlsx',{type:f.blob.type||'application/octet-stream'});
+      copiedSources.set(signature,await window.MallCloud.uploadSource(original,item.platform));
+      rawCount++;
+     }
+     saved.storagePath=copiedSources.get(signature);
+    }else if(!saved.storagePath)unavailableCount++;
+    entries.push(saved);
+   }
+   await writeOne({...item,launches,files:entries});
    uploaded++;
   }
   localHistoryCount=0;
   await syncDB();
-  notify('成功同步 '+uploaded+' 个月'+(skipped?' · '+skipped+' 个月云端已有记录已跳过':''));
+  notify('云端同步 '+uploaded+' 个月 · '+rawCount+' 个原始文件'+(skipped?' · 跳过 '+skipped+' 个已有月份':'')+(unavailableCount?' · '+unavailableCount+' 个文件仅保存解析数据':''));
  }catch(err){notify('云端同步未完成：'+err.message,true);alertMsg('历史数据同步失败：'+err.message)}
  finally {btn.disabled=false;btn.textContent='一键同步本地历史数据'}
 }
