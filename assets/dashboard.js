@@ -86,6 +86,8 @@ async function writeOne(entry){
  await window.MallCloud.putArchive(entry.platform,entry.ym,normalized);
  archive.set(k,normalized);
  await publishArchive(normalized);
+ // Preserve the existing quarterly SOP engine's browser cache without making it authoritative.
+ try{await localWriteOne(normalized)}catch(err){console.warn('本地季度兼容缓存写入失败',err)}
 }
 async function deleteOne(k){
  if(!cloudActive)return localDeleteOne(k);
@@ -96,6 +98,7 @@ async function deleteOne(k){
  archive.set(k,empty);
  await window.MallCloud.removeReport(p,m);
  cloudReports.delete(k);
+ try{await localDeleteOne(k)}catch(err){console.warn('本地季度兼容缓存清理失败',err)}
 }
 function initialLaunches(p,m){
  if(p==='POPPO'&&m==='2026-10')return OCT_IDS.map(id=>({id,cat:'',date:''}));
@@ -114,6 +117,11 @@ async function refreshCloudData(){
   {key:key(r.platform,r.period),platform:r.platform,ym:r.period,
     files:[{name:'已发布月度分析',rows:[{}]}]}
  ]));
+ if(cloudAdmin){
+  for(const item of archive.values())if(item.files?.length&&!await localReadOne(item.key)){
+   try{await localWriteOne(item)}catch(err){console.warn('本地季度兼容缓存写入失败',err)}
+  }
+ }
 }
 function pendingLocalHistory(){
  if(!cloudAdmin)return 0;
@@ -375,9 +383,9 @@ function parseLaunches(raw){let out=[],seen=new Set();for(const line of raw.spli
  let match=p[0].match(/^(?:(头像框|派对背景|派对主题|资料卡|聊天气泡|座驾)\s*[:：]\s*)?(\d+)$/),id=match?.[2]||p[0].replace(/[^\d]/g,''),cat=match?.[1]?catOf(match[1]):'',launchDate='',extra=p.slice(1);
  for(const x of extra){if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(x))launchDate=dateFrom(x);else if(CATS.includes(catOf(x)))cat=catOf(x)}
  if(!id)continue;const k=(cat?cat+'|':'')+id;if(seen.has(k))continue;seen.add(k);out.push({id,cat,date:launchDate})}return out}
-function syncSOP(){const all=load(LAUNCH_KEY),q=year+'-Q'+Math.ceil(month/3),sop=load(SOP_NEW),k=platform+'|'+q,prev=sop[k]||{},current={};for(const c of CORE)current[c]=[...(prev[c]||[])];
+function syncSOP(){const q=year+'-Q'+Math.ceil(month/3),sop=load(SOP_NEW),k=platform+'|'+q,prev=sop[k]||{},current={};for(const c of CORE)current[c]=[...(prev[c]||[])];
  const qmonths=[Math.floor((month-1)/3)*3+1,Math.floor((month-1)/3)*3+2,Math.floor((month-1)/3)*3+3];
- for(const mon of qmonths){const m=year+'-'+String(mon).padStart(2,'0'),n=all[key(platform,m)]||(platform==='POPPO'&&m==='2026-10'?OCT_IDS.map(id=>({id,cat:''})):[]);const records=monthRec(m);
+ for(const mon of qmonths){const m=year+'-'+String(mon).padStart(2,'0'),n=launchesFor(m);const records=monthRec(m);
   for(const z of n){let cats=z.cat?[z.cat]:[...new Set(records.filter(r=>r.id===z.id&&CORE.includes(r.cat)).map(r=>r.cat))];for(const c of cats)if(CORE.includes(c)&&!current[c].includes(z.id))current[c].push(z.id)}}
  sop[k]=current;save(SOP_NEW,sop)}
 async function saveLaunches(){
