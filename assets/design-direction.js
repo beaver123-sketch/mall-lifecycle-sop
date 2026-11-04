@@ -114,49 +114,80 @@ function renderCoverage(data){
  $('designTagCount').textContent=scopedTags().length+' 条标签';
 }
 function rankThemes(data){
- const cat=$('designRecommendCat').value;
- const all=[...data.groups.values()].filter(g=>cat==='全部'||g.cat===cat).sort((a,b)=>(b.qty/b.items)-(a.qty/a.items));
- $('designThemeRows').innerHTML=all.map(g=>'<tr><td><strong>'+escape(g.theme)+'</strong><small class="dd-cat">'+escape(g.cat)+'</small></td><td class="num">'+g.items.length+'</td><td class="num">'+fmt(g.qty)+'</td><td class="num">'+fmt(g.qty/g.items.length)+'</td><td class="num">$'+dollars(g.coin)+'</td><td class="dd-source">'+g.items.slice(0,3).map(p=>escape(p.name)+' (ID '+escape(p.id)+')').join('、')+'</td></tr>').join('')||
- '<tr><td colspan="6" class="dd-empty">当前筛选条件下尚无带题材标签的成交商品。管理员标注后即可生成真实题材排行。</td></tr>';
+ const mode=$('designRecommendCat').value,cats=mode==='set'?SET_CATS:['座驾'];
+ const groups=new Map();
+ [...data.groups.values()].filter(g=>cats.includes(g.cat)).forEach(g=>{
+  if(!groups.has(g.theme))groups.set(g.theme,{theme:g.theme,cats:new Map(),qty:0,items:[]});
+  const x=groups.get(g.theme);x.cats.set(g.cat,g);x.qty+=g.qty;x.items.push(...g.items);
+ });
+ const arr=[...groups.values()].sort((a,b)=>{
+  const norm=x=>[...x.cats.values()].reduce((s,g)=>{const base=data.bases.get(g.cat);return s+(g.qty/g.items.length)/Math.max(base?.qty/base?.items||0,1)},0)/x.cats.size;
+  return norm(b)-norm(a);
+ });
+ $('designThemeRows').innerHTML=arr.map(x=>{
+  const breakdown=[...x.cats.values()].map(g=>{const base=data.bases.get(g.cat),avg=base?.items?base.qty/base.items:0;
+   return escape(g.cat)+' '+fmt(g.qty)+' 件（单品均销 '+fmt(g.qty/g.items.length)+' / 品类均销 '+fmt(avg)+'）';
+  }).join('<br>');
+  return '<tr><td><strong>'+escape(x.theme)+'</strong></td><td class="num">'+x.cats.size+'/'+cats.length+'</td>'+
+  '<td class="num">'+x.items.length+'</td><td class="num">'+fmt(x.qty)+'</td>'+
+  '<td class="dd-source">'+breakdown+'</td><td class="dd-source">'+x.items.slice().sort((a,b)=>b.qty-a.qty).slice(0,4).map(p=>escape(p.name)+' (ID '+escape(p.id)+')').join('、')+'</td></tr>';
+ }).join('')||'<tr><td colspan="6" class="dd-empty">当前没有覆盖该设计类型的已标注成交商品。请先在下方标签管理中设置历史商品主题材。</td></tr>';
 }
 function candidateScore(t,data){
- const g=data.groups.get(t.cat+'|'+t.theme),base=data.bases.get(t.cat);
- if(!g||!g.items.length)return 0;
- const categoryAvg=base?.items?base.qty/base.items:0;
- return 1+Math.min(g.qty/g.items.length/Math.max(categoryAvg,1),5)+Math.min(g.items.length,5)*.12;
+ const cats=t.kind==='set'?SET_CATS:['座驾'];
+ return cats.reduce((total,cat)=>{
+  const g=data.groups.get(cat+'|'+t.theme),b=data.bases.get(cat);
+  if(!g||!g.items.length)return total;
+  const categoryAvg=b?.items?b.qty/b.items:0;
+  return total+(g.qty/g.items.length)/Math.max(categoryAvg,1)+Math.min(g.items.length,5)*.12;
+ },0);
 }
 function recLabel(t,data){
- const g=data.groups.get(t.cat+'|'+t.theme),base=data.bases.get(t.cat);
- if(!g||!g.items.length)return {cls:'idea',name:'创意候选 · 待数据验证',info:'当前统计月份中暂无已标注的同品类、同题材成交商品。'};
- const avg=g.qty/g.items.length,refAvg=base?.items?base.qty/base.items:0;
- const comparison='单品均销 '+fmt(avg)+' 件；同品类均值 '+fmt(refAvg)+' 件';
- const products=g.items.slice().sort((a,b)=>b.qty-a.qty).slice(0,2).map(p=>p.name+'（'+p.id+'）').join('、');
- const info='已标注 '+g.items.length+' 款历史商品，合计销售 '+fmt(g.qty)+' 件。'+comparison+'。关联：'+products;
- if(g.items.length>=2&&avg>refAvg)return {cls:'strong',name:'历史表现较好 · 可延展',info};
- return {cls:'limited',name:'已有销售样本 · 继续观察',info};
+ const cats=t.kind==='set'?SET_CATS:['座驾'];
+ const observations=cats.map(cat=>{
+  const g=data.groups.get(cat+'|'+t.theme),b=data.bases.get(cat);
+  if(!g||!g.items.length)return null;
+  const avg=g.qty/g.items.length,baseAvg=b?.items?b.qty/b.items:0;
+  return {cat,count:g.items.length,qty:g.qty,avg,baseAvg,
+   products:g.items.slice().sort((a,b)=>b.qty-a.qty).slice(0,2).map(p=>p.name+'（'+p.id+'）').join('、')};
+ }).filter(Boolean);
+ if(!observations.length)return {cls:'idea',name:'创意候选 · 暂无题材销售依据',
+  info:'所选统计周期内未找到已标注的相关历史商品。以下为创意方向示例，不代表已经验证畅销。'};
+ const info=observations.map(o=>o.cat+'：'+o.count+' 个SKU、销量 '+fmt(o.qty)+' 件，单品均销 '+fmt(o.avg)+' 件（同品类均值 '+fmt(o.baseAvg)+'）；参考 '+o.products).join('。');
+ const above=observations.filter(o=>o.avg>o.baseAvg&&o.count>=2);
+ const strong=t.kind==='set'?above.length>=2:above.length>=1;
+ return {cls:strong?'strong':'limited',name:strong?'多品类历史表现较好 · 可延展':'已有销售样本 · 需要继续验证',
+  info:info+(t.kind==='set'?'。仅按品类分别比较，不将不同品类销量直接作为优劣依据。':'。')};
 }
 function makeRecommendations(data){
- const cat=$('designRecommendCat').value,count=Math.max(1,Math.min(8,Number($('designRecommendCount').value)||4));
- let items=LIB.filter(x=>cat==='全部'||x.cat===cat).sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
- if(!items.length)return [];
- const start=round*2%items.length;
- items=items.slice(start).concat(items.slice(0,start));
- // All-category mode cycles categories to prevent a single category filling every slot.
- if(cat==='全部'){
-  const buckets=CATS.map(c=>items.filter(x=>x.cat===c)),mixed=[];
-  while(buckets.some(b=>b.length))for(const b of buckets)if(b.length)mixed.push(b.shift());
-  items=mixed;
- }
+ const mode=$('designRecommendCat').value,count=Math.max(1,Math.min(8,Number($('designRecommendCount').value)||4));
+ let items=(mode==='vehicle'?RIDES:SETS).slice().sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
+ const start=round*2%items.length;items=items.slice(start).concat(items.slice(0,start));
  return items.slice(0,count).map(t=>({...t,evidence:recLabel(t,data)}));
 }
 function renderRecommendations(data){
+ const mode=$('designRecommendCat').value;
+ $('designRecommendCountTitle').textContent=mode==='vehicle'?'座驾款数':'主题套数';
+ const suffix=mode==='vehicle'?'款':'套';
+ Array.from($('designRecommendCount').options).forEach(o=>o.textContent=o.value+' '+suffix);
  selected=makeRecommendations(data);
- $('designRecommendCards').innerHTML=selected.map((r,i)=>'<article class="dd-card"><div class="dd-card-top"><span class="dd-index">'+String(i+1).padStart(2,'0')+'</span><span class="dd-category">'+escape(r.cat)+'</span><span class="dd-evidence '+r.evidence.cls+'">'+escape(r.evidence.name)+'</span></div>'+
- '<h3>'+escape(r.name)+'</h3><div class="dd-tags">'+r.keywords.map(k=>'<span>'+escape(k)+'</span>').join('')+'</div>'+
- '<p class="dd-idea">'+escape(r.idea)+'</p><div class="dd-effect"><b>动效参考</b> '+escape(r.effect)+'</div>'+
- '<div class="dd-proof"><strong>销售依据</strong><p>'+escape(r.evidence.info)+'</p></div></article>').join('');
- const evidence=selected.filter(r=>r.evidence.cls==='strong').length;
- $('designRecommendNotice').textContent='已生成 '+selected.length+' 个明确提需方向 · '+evidence+' 个方向具备同品类题材销售支持。建议结合设计档期与美术判断审核，不将创意候选视为已验证爆款。';
+ $('designRecommendCards').classList.toggle('dd-rides',mode==='vehicle');
+ $('designRecommendCards').innerHTML=selected.map((r,i)=>{
+  const type=r.kind==='set'?'主题套装 · 四品类':'独立座驾';
+  const parts=r.kind==='set'?'<div class="dd-variant-heading">同一主题下的四个品类设计</div><div class="dd-variants">'+SET_CATS.map(cat=>
+   '<div class="dd-variant"><strong>'+escape(cat)+'</strong><p>'+escape(r.variants[cat])+'</p></div>'
+  ).join('')+'</div>':'<div class="dd-vehicle"><strong>座驾独立设计</strong><p>'+escape(r.idea)+'</p></div>';
+  return '<article class="dd-card"><div class="dd-card-top"><span class="dd-index">'+String(i+1).padStart(2,'0')+'</span>'+
+   '<span class="dd-category">'+type+'</span><span class="dd-evidence '+r.evidence.cls+'">'+escape(r.evidence.name)+'</span></div>'+
+   '<h3>'+escape(r.name)+'</h3><div class="dd-palette">统一配色：'+escape(r.palette)+'</div>'+
+   '<div class="dd-tags">'+r.keywords.map(k=>'<span>'+escape(k)+'</span>').join('')+'</div>'+
+   (r.kind==='set'?'<p class="dd-idea">'+escape(r.idea)+'</p>':'')+parts+
+   '<div class="dd-effect"><b>'+(r.kind==='set'?'套装动效方向':'登场动效')+'</b> '+escape(r.effect)+'</div>'+
+   '<div class="dd-proof"><strong>历史销量参考</strong><p>'+escape(r.evidence.info)+'</p></div></article>';
+ }).join('');
+ const supported=selected.filter(r=>r.evidence.cls!=='idea').length;
+ $('designRecommendNotice').textContent='已生成 '+selected.length+(mode==='set'?' 套统一主题装扮（每套包含头像框、资料卡、派对背景、聊天气泡，共 '+(selected.length*4)+' 个品类设计）':' 款独立座驾设计')+
+  '。其中 '+supported+' 个方向关联到已标注历史销量；无样本的方案会明确标为创意候选。';
 }
 function allProducts(){
  const map=new Map();
@@ -213,10 +244,15 @@ async function saveTag(){
 }
 function downloadCsv(){
  if(!selected.length)return;
- const rows=[['商品品类','设计名称','设计题材','核心关键词','设计构想','动效参考','数据判断','销售数据依据']]
- .concat(selected.map(x=>[x.cat,x.name,x.theme,x.keywords.join(' / '),x.idea,x.effect,x.evidence.name,x.evidence.info]));
+ const headers=['方案类型','主题名称','品类','设计题材','统一配色','核心关键词','统一设计构想','该品类设计说明','动效方向','销售判断','历史销售依据'];
+ const rows=[headers];
+ selected.forEach(r=>{
+  if(r.kind==='set')SET_CATS.forEach(cat=>rows.push(['主题套装',r.name,cat,r.theme,r.palette,r.keywords.join(' / '),r.idea,r.variants[cat],r.effect,r.evidence.name,r.evidence.info]));
+  else rows.push(['独立座驾',r.name,'座驾',r.theme,r.palette,r.keywords.join(' / '),r.idea,r.idea,r.effect,r.evidence.name,r.evidence.info]);
+ });
  const blob=new Blob(['\uFEFF'+rows.map(row=>row.map(csv).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='商城设计提需_'+ctx.platform+'_'+ctx.period+'.csv';
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
+ a.download='商城设计提需_'+ctx.platform+'_'+ctx.period+'_'+(selected[0]?.kind==='set'?'四品类主题套装':'座驾')+'.csv';
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
 $('designRecommendCat').addEventListener('change',()=>{round=0;renderAll()});
