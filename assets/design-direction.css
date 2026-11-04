@@ -78,3 +78,17 @@
 #page-design.month-no-data > .dd-theme-panel,
 #page-design.month-no-data > .dd-admin{display:block!important}
 #page-design.month-no-data > .dd-section-head{display:none!important}
+
+/* Unified visual brief: each set = 4 coordinated categories, rides remain standalone. */
+.dd-cards:not(.dd-rides){grid-template-columns:minmax(0,1fr)}
+.dd-card{gap:0}
+.dd-palette{font-size:11px;color:#8795a8;margin:-4px 0 14px;letter-spacing:.02em}
+.dd-variant-heading{color:#62738d;font-size:11px;font-weight:750;letter-spacing:.02em;margin:5px 0 10px}
+.dd-variants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-bottom:16px}
+.dd-variant{min-width:0;background:#f8faff;border:1px solid #eef2fa;border-radius:9px;padding:15px 16px}
+.dd-variant strong,.dd-vehicle strong{display:block;color:#3f5b8c;font-size:12px;font-weight:730;margin-bottom:7px}
+.dd-variant p,.dd-vehicle p{margin:0;font-size:12px;color:#687a91;line-height:1.75}
+.dd-vehicle{background:#f8faff;border:1px solid #edf1f8;border-radius:9px;padding:14px 16px;margin:14px 0}
+#designRecommendCards:not(.dd-rides) .dd-card{padding:22px 24px}
+#designRecommendCards:not(.dd-rides) .dd-card h3{font-size:21px}
+@media(max-width:740px){.dd-variants{grid-template-columns:1fr}#designRecommendCards:not(.dd-rides) .dd-card{padding:17px}}
