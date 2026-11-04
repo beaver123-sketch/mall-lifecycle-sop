@@ -80,19 +80,19 @@
       <section class="view" id="page-design" hidden>
         <div class="page-head"><div><h1>设计方向</h1><div class="page-date" id="designPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
         <section class="panel dd-panel dd-recommend-panel" aria-label="商城设计方向智能推荐">
-          <div class="panel-head"><div><div class="dd-title-line"><h2>商城设计方向智能推荐</h2><span class="dd-version">设计提需</span></div><div class="subtle">明确名称 · 核心关键词 · 设计构想 · 历史销售依据</div></div><span class="dd-muted" id="designLabelState">正在读取设计标签…</span></div>
+          <div class="panel-head"><div><div class="dd-title-line"><h2>商城设计方向智能推荐</h2><span class="dd-version">设计提需</span></div><div class="subtle">主题统一 · 四品类分工 · 座驾独立 · 历史销售依据</div></div><span class="dd-muted" id="designLabelState">正在读取设计标签…</span></div>
           <div class="dd-controls">
-            <label>商品品类<select id="designRecommendCat"><option value="派对背景" selected>派对背景</option><option value="头像框">头像框</option><option value="资料卡">资料卡</option><option value="聊天气泡">聊天气泡</option><option value="座驾">座驾</option><option value="全部">全部品类</option></select></label>
-            <label>设计数量<select id="designRecommendCount"><option value="2">2 款</option><option value="3">3 款</option><option value="4" selected>4 款</option><option value="5">5 款</option><option value="6">6 款</option><option value="8">8 款</option></select></label>
+            <label>设计提需类型<select id="designRecommendCat"><option value="set" selected>主题装扮套装（四品类）</option><option value="vehicle">座驾（独立设计）</option></select></label>
+            <label><span id="designRecommendCountTitle">主题套数</span><select id="designRecommendCount"><option value="2">2 套</option><option value="3">3 套</option><option value="4" selected>4 款</option><option value="5">5 套</option><option value="6">6 套</option><option value="8">8 套</option></select></label>
             <div class="dd-control-actions"><button type="button" class="button light" id="designRegenerate">↻ 换一批设计</button><button type="button" class="button primary" id="designExportBrief">导出设计提需 CSV</button></div>
           </div>
-          <div class="dd-summary" id="designRecommendNotice">推荐结果将结合已标注商品的真实销售数据；尚无数据支持的创意将明确标记。</div>
+          <div class="dd-summary" id="designRecommendNotice">以一整套主题为单位推荐：头像框、资料卡、派对背景、聊天气泡使用相同主题；座驾单独提需。</div>
           <div class="dd-cards" id="designRecommendCards"></div>
-          <p class="dd-footnote">说明：推荐名称和关键词来自可维护的创意方向库；销量依据来自当前平台近 3 个已发布月份的历史订单汇总。标签不足时不自动推断畅销题材。</p>
+          <p class="dd-footnote">说明：一套装扮包含头像框、资料卡、派对背景、聊天气泡，共四个品类；座驾单独设计。创意名称与关键词来自预设方向库，销售依据来自当前平台近 3 个已发布月份的实际订单汇总，标签不足时不会虚构推荐依据。</p>
         </section>
         <section class="panel dd-panel dd-theme-panel">
-          <div class="panel-head"><div><h2>商品题材销售表现</h2><div class="subtle">按品类内同题材商品汇总，避免不同品类直接比较</div></div><span class="dd-muted" id="designCoverage">等待数据</span></div>
-          <div class="table-wrap"><table class="dd-table"><thead><tr><th>设计题材 / 品类</th><th class="num">标注 SKU</th><th class="num">销量（件）</th><th class="num">单品均销（件）</th><th class="num">金币收益（$）</th><th>关联商品参考</th></tr></thead><tbody id="designThemeRows"></tbody></table></div>
+          <div class="panel-head"><div><h2>同主题历史销售表现</h2><div class="subtle">主题套装按同题材归集四个品类，分别列示各品类单品均销与基准；座驾独立统计</div></div><span class="dd-muted" id="designCoverage">等待数据</span></div>
+          <div class="table-wrap"><table class="dd-table"><thead><tr><th>统一设计题材</th><th class="num">覆盖品类</th><th class="num">标注 SKU</th><th class="num">销量（件）</th><th>按品类拆分的销售表现</th><th>关联商品参考</th></tr></thead><tbody id="designThemeRows"></tbody></table></div>
         </section>
         <details class="dd-admin" id="designTagsPanel" hidden>
           <summary><span>商品设计标签管理 <span class="dd-version">仅管理员可编辑</span></span><span class="dd-muted" id="designTagCount">0 条标签</span></summary>
