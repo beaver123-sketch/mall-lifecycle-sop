@@ -72,3 +72,9 @@
 @media(max-width:1150px){.dd-editor{grid-template-columns:repeat(3,minmax(0,1fr))}.dd-control-actions{margin-left:0}}
 @media(max-width:800px){.dd-cards{grid-template-columns:1fr}.dd-controls{align-items:stretch}.dd-control-actions{width:100%}.dd-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.dd-admin-head{align-items:flex-start;flex-direction:column}.dd-admin-head input{width:100%}}
 @media(max-width:540px){.dd-card{padding:16px}.dd-card h3{font-size:18px}.dd-editor{grid-template-columns:1fr}.dd-controls select{width:100%}.dd-evidence{margin-left:0}.dd-admin summary,.dd-admin-body{padding-left:14px;padding-right:14px}.dd-control-actions button{flex:1}}
+
+/* Creative briefs remain accessible when the selected month has not been published yet. */
+#page-design.month-no-data > .dd-recommend-panel,
+#page-design.month-no-data > .dd-theme-panel,
+#page-design.month-no-data > .dd-admin{display:block!important}
+#page-design.month-no-data > .dd-section-head{display:none!important}
