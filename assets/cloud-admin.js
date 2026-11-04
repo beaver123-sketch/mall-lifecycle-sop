@@ -16,7 +16,7 @@ async function update(){
  if(adminError){$('permission').textContent='权限检测失败';msg('云端权限检查失败：'+adminError.message,'error');return}
  if(rows?.length){
   $('permission').innerHTML='<span class="cloud-pill">已授予管理员权限</span>';
-  msg('管理员身份验证成功。可以返回数据管理，下一步将启用云端上传与历史数据迁移。','success');
+  msg('管理员身份已授权。返回「数据管理」可上传文件，或一键同步本机历史月份到云端供同事查看。','success');
  }else{
   $('permission').innerHTML='<span class="cloud-pill">已验证邮箱 · 待授权</span>';
   msg('邮箱验证成功，但尚未授予管理员权限。\n请返回 ChatGPT 告诉我「已完成管理员邮箱验证」，我会核对项目内已验证的账号并进行授权。');
