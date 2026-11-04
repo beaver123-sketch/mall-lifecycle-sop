@@ -183,3 +183,23 @@ body.analysis-month-view .page-head{margin-bottom:22px}
 #page-data .clear-month:hover:not(:disabled){background:#fff7f7;border-color:#e9b9c0;color:#aa5665}
 #page-data .clear-month:disabled{background:#fbfcfe;border-color:#edf0f5;color:#b6c0ce;opacity:1;cursor:default}
 @media(max-width:650px){#page-data .clear-month{font-size:11px;padding:7px 9px}}
+
+/* Shared, cloud-first Mall Data Center. No raw source rows for public visitors. */
+[hidden]{display:none!important}
+.cloud-status{display:flex;align-items:center;min-height:40px;margin:-6px 0 23px;padding:11px 16px;border:1px solid #e1eafa;background:#f5f8ff;color:#5b709d;border-radius:10px;font-size:12px;font-weight:550}
+.cloud-status::before{content:"";width:7px;height:7px;background:#54af91;border-radius:100%;margin-right:11px;flex:0 0 7px}
+.cloud-status.error{border-color:#f4d6d6;background:#fff8f8;color:#ba616b}
+.cloud-status.error::before{background:#d68484}
+.cloud-migrate{display:flex;gap:24px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:17px 22px;background:#fff;border:1px solid #dfe8fa;border-radius:12px}
+.cloud-migrate strong{color:#374f86;font-size:13px}
+.cloud-migrate p{margin:6px 0 0;color:#8796ae;font-size:12px;line-height:1.7}
+.cloud-migrate .button{flex:none}
+.cloud-viewer-panel{border:1px solid #e7ebf5;border-radius:12px;background:#fff;padding:26px 28px;color:#71809a;font-size:13px;line-height:1.8}
+.cloud-viewer-panel a{color:#4767d2;font-weight:680}
+.cloud-readonly .topbar #headerUpload{display:none!important}
+.cloud-readonly #page-new [data-goto="data"]{display:none!important}
+@media(max-width:720px){
+ .cloud-migrate{gap:12px;align-items:flex-start}
+ .cloud-migrate .button{width:100%}
+ .cloud-status{line-height:1.6}
+}
