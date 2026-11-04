@@ -125,7 +125,7 @@ async function refreshCloudData(){
 }
 function pendingLocalHistory(){
  if(!cloudAdmin)return 0;
- return [...localHistoryKeys].filter(k=>!(archive.get(k)?.files||[]).length).length;
+ return [...localHistoryKeys].filter(k=>!cloudReports.has(k)).length;
 }
 async function syncLocalHistory(){
  if(!cloudAdmin||cloudOffline){notify('请先登录管理员身份',true);return}
@@ -138,7 +138,11 @@ async function syncLocalHistory(){
   for(const item of history) {
    if(!item?.platform||!/^\d{4}-\d{2}$/.test(item.ym)||!Array.isArray(item.files)||!item.files.length)continue;
    const k=key(item.platform,item.ym),prior=archive.get(k);
-   if(prior?.files?.length){skipped++;continue}
+   if(prior?.files?.length){
+    if(!cloudReports.has(k)){btn.textContent='正在补发 '+item.ym+' 的共享月报…';await publishArchive(prior);uploaded++}
+    else skipped++;
+    continue
+   }
    btn.textContent='正在同步 '+item.ym+'…';
    const launches=Object.prototype.hasOwnProperty.call(legacyLaunches,k)?
     legacyLaunches[k]:initialLaunches(item.platform,item.ym);
