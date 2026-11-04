@@ -72,7 +72,7 @@ const dollars=n=>(Number(n||0)/1000).toLocaleString('en-US',{maximumFractionDigi
 const csv=v=>{let s=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
 const token=s=>String(s||'').split(/[,，、;；\n]/).map(x=>x.trim()).filter(Boolean).slice(0,8);
 const key=(cat,id)=>cat+'|'+String(id);
-let ctx=null,tags=[],loaded=false,loading=false,round=0,selected=[],tagFilter='';
+let ctx=null,tags=[],loaded=false,loading=false,round=0,selected=[],tagFilter='',blockedCandidates=[];
 function scopedTags(){return tags.filter(t=>t.platform===ctx?.platform);}
 function monthReports(){
  if(!ctx)return [];
@@ -150,8 +150,12 @@ function recLabel(t,data){
 }
 function makeRecommendations(data){
  const mode=$('designRecommendCat').value,count=Math.max(1,Math.min(8,Number($('designRecommendCount').value)||4));
+ const history=window.MallDesignHistory;
+ const original=mode==='vehicle'?RIDES:SETS;
+ blockedCandidates=original.map(item=>({item,result:history?.check(item)}))
+   .filter(x=>x.result?.blocked);
  const base=mode==='vehicle'?(window.MallRideEngine?.eligible(RIDES)||[]):SETS;
- let items=base.slice().sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
+ let items=base.filter(item=>!history?.check(item)?.blocked).sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
  if(!items.length)return [];
  const start=round*2%items.length;items=items.slice(start).concat(items.slice(0,start));
  return items.slice(0,count).map(t=>({...t,evidence:recLabel(t,data)}));
@@ -177,11 +181,23 @@ function renderRecommendations(data){
    (r.kind==='set'?'<p class="dd-idea">'+escape(r.idea)+'</p>':'')+parts+
    (r.kind==='set'?'<div class="dd-effect"><b>套装动效方向</b> '+escape(r.effect)+'</div>':'')+
    '<div class="dd-proof"><strong>历史销量参考</strong><p>'+escape(r.evidence.info)+'</p></div></article>';
- }).join('')||(mode==='vehicle'?'<div class="dd-empty">已制作记录与候选库完成排重后暂无可推荐的新座驾。请补充不重复的新设计对象。</div>':'');
+ }).join('')||'<div class="dd-empty">候选库中可推荐的设计已被历史查重过滤，请补充新的具体设计对象，或校对历史库标注。</div>';
  const supported=selected.filter(r=>r.evidence.cls!=='idea').length;
  $('designRecommendNotice').textContent='已生成 '+selected.length+(mode==='set'?' 套统一主题装扮（每套包含头像框、资料卡、派对背景、聊天气泡，共 '+(selected.length*4)+' 个品类设计）':' 款独立载具设计（严格区分普通商品礼物）')+
   '。其中 '+supported+' 个方向关联到已标注历史销量；无样本的方案会明确标为创意候选。'+
   (mode==='vehicle'?' 座驾按 5–6s / 7–8s / 9–10s 三档制作与售卖；未配置的真实价格明确留空。':'');
+ const historyState=window.MallDesignHistory;
+ const detail=blockedCandidates.slice(0,5).map(x=>{
+  const hit=x.result.hits[0];
+  return x.item.name+(hit?'（历史：'+hit.name+' · '+hit.category+'）':'');
+ }).join('；');
+ const result=document.getElementById('designHistoryExclusions');
+ if(result){
+  result.textContent='历史去重：已过滤 '+blockedCandidates.length+' 个重复主体/名称。'+
+   (detail?' 例如：'+detail+'。':'')+
+   (historyState?.error?' 补录记录暂无法同步，查重可能不完整。':
+    !historyState?.loaded?' 正在加载管理员补录记录。':' 已核对发布月报及云端人工补录。');
+ }
 }
 function allProducts(){
  const map=new Map();
@@ -220,6 +236,7 @@ async function loadTags(){
  try{
   if(!window.MallCloud?.listDesignTags)throw Error('标签云端组件未就绪');
   tags=await window.MallCloud.listDesignTags();loaded=true;
+  window.MallDesignHistory?.setTags(tags);
   $('designLabelState').textContent='标签已同步云端';renderAll();
  }catch(err){$('designLabelState').textContent='标签读取失败：'+err.message;tags=[];renderAll();}
  finally{loading=false}
@@ -272,9 +289,11 @@ $('designTagList').addEventListener('click',async e=>{
  catch(err){$('designTagProductName').textContent='删除失败：'+err.message;del.disabled=false}
 });
 window.addEventListener('mall:ride-refresh',()=>{if(ctx)renderAll()});
+window.addEventListener('mall:design-history-change',()=>{if(ctx)renderAll()});
 window.addEventListener('mall:design-render',e=>{
  const changed=!ctx||ctx.platform!==e.detail.platform||ctx.period!==e.detail.period;
  ctx=e.detail;if(changed)round=0;
+ window.MallDesignHistory?.setContext(ctx);
  window.MallRideEngine?.setContext(ctx);
  renderAll();if(!loaded&&!loading)loadTags();
 });
