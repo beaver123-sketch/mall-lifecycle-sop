@@ -1,0 +1,59 @@
+/* Historical design library: compact, white, consistent with mall analytics dashboard. */
+#designBriefWorkspace[hidden],#designHistoryWorkspace[hidden],#historyEditor[hidden],
+#historyMore[hidden],#historyAdd[hidden]{display:none!important}
+.dd-workspace-tabs{display:flex;align-items:center;gap:8px;border-bottom:1px solid #e8edf4;margin:-5px 0 19px;padding:0 2px 10px}
+.dd-workspace-tab{border:1px solid transparent;background:transparent;color:#748298;font-weight:650;font-size:13px;padding:10px 18px;border-radius:9px;cursor:pointer;transition:background .15s,color .15s}
+.dd-workspace-tab:hover{background:#f2f6fd;color:#304c81}
+.dd-workspace-tab.is-active{background:#eaf1ff;color:#315fa7;border-color:#dce7fc}
+.dd-workspace-hint{margin-left:auto;font-size:11px;color:#8a98ac}
+.dd-history-panel{padding:22px 23px}
+.dd-history-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.dd-history-heading h2{margin:0;color:#233850;font-size:19px}
+.dd-history-heading p{font-size:12px;line-height:1.75;color:#8190a5;max-width:730px;margin:6px 0 0}
+.dd-history-actions{display:flex;gap:8px;flex-shrink:0}
+.dd-history-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 14px}
+.dd-history-stats>div{border:1px solid #edf1f6;border-radius:11px;padding:14px 17px;background:#fbfcff}
+.dd-history-stats b{display:block;font-size:24px;line-height:1.25;color:#263c59;letter-spacing:-.5px}
+.dd-history-stats span{display:block;margin-top:7px;font-size:11px;color:#8693a7}
+.dd-history-note{background:#f8faff;color:#6b7f9a;font-size:11px;line-height:1.7;padding:11px 14px;border:1px solid #e8effb;border-radius:8px;margin:0 0 16px}
+.dd-history-filters{display:grid;grid-template-columns:minmax(250px,1fr) 162px 155px;gap:11px;margin-bottom:14px}
+.dd-history-filters input,.dd-history-filters select,
+.dd-history-editor input,.dd-history-editor select,.dd-history-editor textarea{font:inherit;width:100%;box-sizing:border-box;background:#fff;border:1px solid #dfe5ed;border-radius:8px;padding:10px 12px;font-size:12px;color:#33465f;outline:0}
+.dd-history-filters input:focus,.dd-history-filters select:focus,.dd-history-editor input:focus,.dd-history-editor select:focus,.dd-history-editor textarea:focus{border-color:#79a2dc;box-shadow:0 0 0 2px #eaf3ff}
+.dd-history-tablewrap{border:1px solid #e9edf3;border-radius:10px;overflow:auto}
+.dd-history-table{width:100%;border-collapse:collapse;min-width:790px;font-size:12px}
+.dd-history-table th{background:#f8faff;padding:13px 12px;color:#7b8a9f;text-align:left;white-space:nowrap;font-size:11px;font-weight:650;border-bottom:1px solid #e9edf4}
+.dd-history-table td{padding:13px 12px;vertical-align:middle;border-bottom:1px solid #f0f2f5;color:#51637a;line-height:1.4}
+.dd-history-table tr:last-child td{border-bottom:0}
+.dd-history-table tr:hover td{background:#fafcff}
+.dd-history-table td:first-child{min-width:155px}
+.dd-history-table strong{font-size:12px;color:#2e415b;font-weight:680}
+.dd-history-table small{display:block;color:#98a5b6;font-size:10px;margin-top:5px;line-height:1.4}
+.dd-history-badge{white-space:nowrap;border-radius:5px;background:#eef3fb;color:#5474a8;padding:5px 8px;font-size:11px}
+.dd-history-link{border:0;background:transparent;padding:5px 4px;color:#4374be;cursor:pointer;font-weight:650;font-size:12px}
+.dd-history-link:hover{text-decoration:underline}
+.dd-history-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;color:#91a0b1;font-size:11px;min-height:36px}
+.dd-history-editor{margin-top:18px;padding:22px}
+.dd-history-editor .panel-head{margin:0 0 14px}
+.dd-history-edit-tip{margin:0 0 18px;color:#8795a8;font-size:11px;line-height:1.6}
+.dd-history-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 18px}
+.dd-history-form-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#586a80;font-weight:650}
+.dd-history-form-grid .dd-history-span{grid-column:1/-1}
+.dd-history-form-actions{display:flex;align-items:center;gap:14px;margin-top:18px}
+.dd-history-form-actions span{font-size:11px;color:#7084a2}
+@media(max-width:950px){
+ .dd-history-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dd-history-heading{flex-direction:column}
+ .dd-history-filters{grid-template-columns:1fr 1fr}
+ .dd-history-filters input{grid-column:1/-1}
+ .dd-workspace-hint{display:none}
+}
+@media(max-width:600px){
+ .dd-workspace-tab{font-size:12px;padding:9px 10px}
+ .dd-history-panel{padding:16px}
+ .dd-history-form-grid{grid-template-columns:1fr}
+ .dd-history-form-grid .dd-history-span{grid-column:auto}
+ .dd-history-actions{width:100%}
+ .dd-history-actions .button{flex:1}
+}
+#designHistoryExclusions{margin:-3px 0 16px;padding:10px 13px;border-radius:8px;background:#f7f9fc;border:1px solid #e6edf6;font-size:11px;line-height:1.7;color:#637b9f}
