@@ -39,7 +39,7 @@ function alertMsg(s){$('alert').textContent=s;$('alert').hidden=!s}
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('mall-month-archive-v3',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('data'))r.result.createObjectStore('data',{keyPath:'key'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 function transaction(mode,fn){return new Promise((resolve,reject)=>{const tx=db.transaction('data',mode),q=fn(tx.objectStore('data'));let val;q.onsuccess=()=>val=q.result;q.onerror=()=>reject(q.error);tx.oncomplete=()=>resolve(val);tx.onerror=()=>reject(tx.error)})}
 /* Cloud-first dashboard: admin accesses parsed private archives, viewers only published aggregates. */
-let cloudActive=false,cloudAdmin=false,cloudOffline='',cloudReports=new Map(),cloudQuarters=new Map(),localHistoryCount=0;
+let cloudActive=false,cloudAdmin=false,cloudOffline='',cloudReports=new Map(),cloudQuarters=new Map(),localHistoryCount=0,localHistoryKeys=new Set();
 const localReadAll=()=>transaction('readonly',store=>store.getAll());
 const localReadOne=k=>transaction('readonly',store=>store.get(k));
 const localWriteOne=x=>transaction('readwrite',store=>store.put(x));
@@ -117,7 +117,7 @@ async function refreshCloudData(){
 }
 function pendingLocalHistory(){
  if(!cloudAdmin)return 0;
- return localHistoryCount;
+ return [...localHistoryKeys].filter(k=>!(archive.get(k)?.files||[]).length).length;
 }
 async function syncLocalHistory(){
  if(!cloudAdmin||cloudOffline){notify('请先登录管理员身份',true);return}
@@ -463,7 +463,7 @@ async function init(){
  bindLifecycleFrame();initEvents();
  startupPromise=openDB().then(async connection=>{
   db=connection;
-  localHistoryCount=(await localReadAll()).filter(x=>x.files?.length).length;
+  localHistoryKeys=new Set((await localReadAll()).filter(x=>x.files?.length).map(x=>x.key));localHistoryCount=localHistoryKeys.size;
   cloudActive=true;
   try{const data=await window.MallCloud.init();cloudAdmin=data.isAdmin;await refreshCloudData()}
   catch(err){cloudOffline=err.message||String(err);archive=new Map();cloudReports=new Map();cloudAdmin=false}
