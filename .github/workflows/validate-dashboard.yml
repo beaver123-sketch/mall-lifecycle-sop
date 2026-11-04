@@ -59,6 +59,7 @@ jobs:
               'putDesignHistory:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};const id=item.entry_id||"test-h-"+Object.keys(s.designHistory).length;s.designHistory[id]={...item,entry_id:id};save(s)},',
               'putDesignHistoryBatch:async(items)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.designHistory??={};items.forEach((item,i)=>{const id="test-b-"+(Object.keys(s.designHistory).length+i);s.designHistory[id]={...item,entry_id:id}});save(s)},',
               'removeDesignHistory:async(id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.designHistory?.[id];save(s)},',
+              'removeDesignHistoryBatch:async(platform,ids)=>{if(!'+admin+')throw Error("guest denied");const s=read();let deleted=0;ids.forEach(id=>{const item=s.designHistory?.[id];if(item&&item.platform===platform){delete s.designHistory[id];deleted++}});save(s);return deleted},',
               'listDesignReferences:async()=>Object.values(read().huabanRefs||{}),',
               'putDesignReference:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.huabanRefs??={};s.huabanRefs[[item.platform,item.design_kind,item.design_name,item.category].join("|")]=item;save(s)},',
               'removeDesignReference:async(item)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.huabanRefs?.[[item.platform,item.design_kind,item.design_name,item.category].join("|")];save(s)},',
@@ -91,6 +92,30 @@ jobs:
               await page.locator('#historyFormStatus').selectOption('已完成');
               await page.locator('#historyForm').locator('[type="submit"]').click();
               await page.waitForFunction(()=>window.MallDesignHistory?.check({kind:'set',name:'凤凰涅槃'})?.blocked===true,null,{timeout:10000});
+              // Multi-select manual history entries: four design categories can be removed in one action.
+              for(const cat of ['头像框','资料卡','派对背景','聊天气泡']){
+                await page.locator('#historyAdd').click();
+                await page.locator('#historyFormCategory').selectOption(cat);
+                await page.locator('#historyFormName').fill('批量删除验证主题');
+                await page.locator('#historyFormObject').fill('银叶吊灯');
+                await page.locator('#historyFormStatus').selectOption('待设计');
+                await page.locator('#historyForm').locator('[type="submit"]').click();
+                await page.waitForFunction(()=>document.querySelector('#historyEditor')?.hidden,null,{timeout:10000});
+              }
+              await page.locator('#historySearch').fill('批量删除验证主题');
+              if(await page.locator('#historyRows [data-history-select]').count()!==4)throw Error('Expected 4 selectable manual history records');
+              await page.locator('#historySelectAll').check();
+              if(!(await page.locator('#historySelectedCount').innerText()).includes('4 条'))throw Error('Select-all failed to select all 4 records');
+              if(!(await page.locator('#historyBulkDelete').innerText()).includes('4'))throw Error('Bulk delete button count missing');
+              page.once('dialog',d=>d.accept());
+              await page.locator('#historyBulkDelete').click();
+              await page.waitForFunction(()=>(document.querySelector('#historyBulkStatus')?.textContent||'').includes('已删除 4 条'),null,{timeout:10000});
+              if(await page.locator('#historyRows [data-history-select]').count())throw Error('Deleted manual history records remain visible');
+              await page.locator('#historySearch').fill('');
+              const sourceRow=page.locator('#historyRows tr').filter({hasText:'Candy Cute Ghost'});
+              if(await sourceRow.locator('[data-history-select]').count())throw Error('Source-order history row must not be deletable');
+              if(await sourceRow.count()!==1)throw Error('Original source-order history row was lost after bulk delete');
+
               await page.locator('[data-history-pane="brief"]').click();
               // One brief represents a full four-category theme set, not one independent SKU.
               await page.locator('a[data-page="design"]').click();
