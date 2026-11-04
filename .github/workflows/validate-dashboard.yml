@@ -190,6 +190,35 @@ jobs:
               if(!(await page.locator('#launchCount').innerText()).includes('20 个'))throw Error('Bulk clear unexpectedly deleted October launch IDs');
               await page.locator('#month').selectOption('9');
               if((await page.locator('#fileList [data-remove]').count())!==1)throw Error('Bulk clear unexpectedly removed September file');
+              // Simulate an old IndexedDB file saved before the site moved to Supabase.
+              await page.evaluate(async()=>{
+                const db=await new Promise((resolve,reject)=>{
+                  const req=indexedDB.open('mall-month-archive-v3',1);
+                  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+                });
+                const row={date:'2026-08-06',cat:'头像框',id:'1200',name:'历史头像框（1200）',
+                  qty:7,gq:7,hq:0,ga:7000,ha:0,term:'',source:'legacy.csv/CSV',line:2};
+                const csv='日期,商品类型,商品名称,总销量\n2026-08-06,头像框,历史头像框（1200）,7';
+                await new Promise((resolve,reject)=>{
+                  const tx=db.transaction('data','readwrite');
+                  tx.objectStore('data').put({key:'POPPO|2026-08',platform:'POPPO',ym:'2026-08',
+                    files:[{name:'legacy.csv',size:csv.length,rows:[row],issues:[],
+                    blob:new File([csv],'legacy.csv',{type:'text/csv'})}],
+                    savedAt:'2026-08-31T12:00:00.000Z'});
+                  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+                });
+                db.close();
+              });
+              await page.reload({waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
+              await page.locator('a[data-page="data"]').click();
+              if(!(await page.locator('#cloudMigrate').isVisible()))throw Error('Existing browser archives do not trigger migration banner');
+              await page.locator('#syncLocalCloud').click();
+              await page.waitForFunction(()=>
+                document.querySelector('#archiveCount')?.textContent.includes('2个月')
+                &&document.querySelector('#cloudMigrate')?.hidden,null,{timeout:20000});
+              await page.locator('#month').selectOption('8');
+              if(!(await page.locator('#dataDetails').innerText()).includes('1 条有效记录'))throw Error('Historical archive did not migrate');
               // A separate browser receives only published reports, not admin's parsed row archives.
               const sharedReports=await page.evaluate(()=>localStorage.getItem('mall-test-cloud-storage'));
               const guestContext=await browser.newContext();
@@ -198,6 +227,8 @@ jobs:
               await guest.route('**/assets/cloud-layer.js*',route=>route.fulfill({status:200,contentType:'text/javascript',body:cloudStub(false)}));
               await guest.goto('http://127.0.0.1:8765/#overview',{waitUntil:'domcontentloaded',timeout:30000});
               await guest.waitForFunction(()=>document.documentElement.dataset.mallReady==='true',null,{timeout:25000});
+              await guest.locator('#page-overview .month-picker').selectOption('2026-08');
+              if(!(await guest.locator('#overviewMetrics').innerText()).includes('7'))throw Error('Guest cannot see migrated historical month report');
               await guest.locator('#page-overview .month-picker').selectOption('2026-09');
               if(!(await guest.locator('#overviewMetrics').innerText()).includes('3'))throw Error('Guest cannot see published month report');
               if(await guest.locator('#headerUpload').isVisible())throw Error('Guest can see upload button');
