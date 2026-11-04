@@ -86,8 +86,17 @@ async function writeOne(entry){
  await window.MallCloud.putArchive(entry.platform,entry.ym,normalized);
  archive.set(k,normalized);
  await publishArchive(normalized);
- // Preserve the existing quarterly SOP engine's browser cache without making it authoritative.
- try{await localWriteOne(normalized)}catch(err){console.warn('本地季度兼容缓存写入失败',err)}
+ // Keep the legacy browser backup intact, including original Excel/CSV blobs.
+ // Blob bytes stay out of the public reports and the private JSON archive; the cloud
+ // Storage bucket holds shared originals, while IndexedDB retains its local originals.
+ try {
+  const priorLocal=await localReadOne(k);
+  const existing=new Map((priorLocal?.files||[]).map(f=>[f.name,f.blob]).filter(([,blob])=>blob));
+  const cached={...normalized,files:normalized.files.map((f,i)=>({
+   ...f,blob:(entry.files||[])[i]?.blob??existing.get(f.name)
+  }))};
+  await localWriteOne(cached);
+ }catch(err){console.warn('本地季度兼容缓存写入失败',err)}
 }
 async function deleteOne(k){
  if(!cloudActive)return localDeleteOne(k);
