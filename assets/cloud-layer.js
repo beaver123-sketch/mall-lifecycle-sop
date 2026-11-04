@@ -140,6 +140,18 @@
     const {error}=await client.from('mall_design_history_entries').delete().eq('entry_id',entryId);
     fail('删除手动登记的历史设计',error);
   }
+  async function removeDesignHistoryBatch(platform,entryIds){
+    requireAdmin();
+    if(!['POPPO','VONE'].includes(platform))throw Error('商城平台参数不合法');
+    const ids=[...new Set((entryIds||[]).map(String).filter(Boolean))];
+    if(!ids.length)throw Error('没有需要删除的人工记录');
+    if(ids.length>200)throw Error('单次最多批量删除200条，请分批操作');
+    const {data,error}=await client.from('mall_design_history_entries')
+      .delete().eq('platform',platform).in('entry_id',ids).select('entry_id');
+    fail('批量删除历史设计记录',error);
+    if((data||[]).length!==ids.length)throw Error('仅删除 '+(data||[]).length+' / '+ids.length+' 条，请刷新题材库核验剩余记录');
+    return ids.length;
+  }
   async function listDesignReferences(){
     if(!client)throw Error('云端服务尚未初始化');
     return fetchPaged('mall_design_references','platform,design_kind,design_name,category,pin_url,image_url,note,updated_at');
@@ -163,7 +175,7 @@
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
     listDesignTags,putDesignTag,removeDesignTag,listRideSettings,putRideSettings,
-    listDesignHistory,putDesignHistory,putDesignHistoryBatch,removeDesignHistory,
+    listDesignHistory,putDesignHistory,putDesignHistoryBatch,removeDesignHistory,removeDesignHistoryBatch,
     listDesignReferences,putDesignReference,removeDesignReference,
     get isAdmin(){return isAdmin},
     get user(){return user}
