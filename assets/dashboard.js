@@ -292,6 +292,13 @@ function renderDesign(){const a=snapshot,groups=designGroups(),byQty=groups.slic
  $('designRows').innerHTML=chosen.map((x,i)=>'<tr><td><strong>'+escapeHtml(x.name)+'</strong></td><td class="num">'+x.count+'</td><td class="num"><strong>'+pretty(x.qty)+'</strong></td><td class="num">'+dollars(x.coin/1000)+'</td><td class="num">'+pretty(x.ticket)+'</td><td>'+(i<3?'<span class="flag">重点延展观察</span>':'<span class="flag observe">持续观察</span>')+'</td></tr>').join('')||'<tr><td colspan="6">'+empty('请先登记并上传本月新品数据',true)+'</td></tr>';
  $('designCategoryRows').innerHTML=a.cats.filter(x=>CORE.includes(x.cat)).sort((a,b)=>b.newQty-a.newQty).map(c=>'<tr><td><strong>'+escapeHtml(catName(c.cat))+'</strong></td><td class="num">'+(c.newSkus?.size??c.newSkusCount??0)+'</td><td class="num">'+pretty(c.newQty)+'</td><td class="num">'+percent(c.newQty,c.qty)+'</td><td class="num">'+dollars(c.newCoin/1000)+'</td></tr>').join('')||'<tr><td colspan="5">'+empty('暂无数据',true)+'</td></tr>';
 }
+function publishDesignContext(){
+ const reports=[...cloudReports.entries()].filter(([k])=>k.startsWith(platform+'|'))
+  .map(([k,report])=>({period:k.split('|')[1],report}));
+ window.dispatchEvent(new CustomEvent('mall:design-render',{
+  detail:{platform,period:ym(),admin:cloudAdmin&&!cloudOffline,reports}
+ }));
+}
 function issuesFor(a){let list=[];if(a.collisions)list.push({severity:'error',text:a.collisions+'组同日同商品存在不同统计值，已暂时排除'});if(a.missing)list.push({severity:'error',text:a.missing+'行缺少关键字段，未参与分析'});if(a.duplicates)list.push({severity:'info',text:a.duplicates+'条完全重复记录已去重'});if(a.paymentNotes)list.push({severity:'info',text:a.paymentNotes+'行的支付件数少于总销量，需核对支付方式'});
  for(const f of a.files){for(const i of (f.issues||[]).filter(x=>x.fatal).slice(0,3))list.push({severity:'error',text:f.name+' · '+i.line+'行：'+i.reason})}return list}
 function renderData(){const a=snapshot;const name=ym();$('dataPeriod').textContent=name.replace('-','年')+'月';
@@ -310,7 +317,7 @@ function render(){snapshot=aggregate(ym());const a=snapshot;renderCloudStatus();
  $('archiveCount').textContent=[...archive.values()].filter(v=>v.platform===platform&&v.files?.length).length+'个月';
  const hasProblems=a.collisions||a.missing||a.files.some(f=>(f.issues||[]).some(x=>x.fatal));
  alertMsg(hasProblems?'当前月份存在待核验数据，请前往「数据管理」查看异常。':'');
- renderOverview();renderNew();renderDesign();renderData();
+ renderOverview();renderNew();renderDesign();renderData();publishDesignContext();
  if(view==='lifecycle'&&cloudAdmin&&!cloudOffline)openLifecycleTab();
 }
 function openLifecycleTab(){
