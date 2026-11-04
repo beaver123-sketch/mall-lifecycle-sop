@@ -1,34 +1,36 @@
-# Cloud-sharing plan (Option A)
+# Mall Data Center · Supabase cloud-sharing operation guide
 
-Status: **prepared but not enabled**. No Supabase project exists yet in the connected account. Do not switch the GitHub Pages production dashboard to cloud mode without deploying and verifying the schema, admin identity, API configuration, and historical-data migration.
+**Project:** `zsymjxmhomftiesmlhgk` · `ap-southeast-1` · https://supabase.com/dashboard/project/zsymjxmhomftiesmlhgk
 
-## Permission boundary
+**Implemented:** database tables and RLS, private source bucket, verified allowlisted admin account, public month reports, admin cloud writes, original-file uploads, historical local IndexedDB migration, and read-only cloud analysis UI.
 
-| Resource | Anonymous site visitor | Authenticated allowlisted administrator |
+**Still pending:** public quarterly lifecycle reports. `mall_lifecycle_reports` is prepared but not wired to published lifecycle output. The embedded legacy quarterly page remains admin-only.
+
+## Access model
+
+| Resource | Public anonymous visitor | Verified, allowlisted admin |
 |---|---|---|
-| `mall_month_reports` (pre-aggregated month dashboard payload) | SELECT | SELECT / INSERT / UPDATE / DELETE |
-| `mall_lifecycle_reports` (pre-aggregated quarter lifecycle summaries) | SELECT | SELECT / INSERT / UPDATE / DELETE |
-| `mall_private_month_archives` (parsed original report rows and file manifests) | no access | SELECT / INSERT / UPDATE / DELETE |
-| `mall_admins` | no access | SELECT own membership only |
-| `mall-order-source` private Storage bucket | no access | authenticated storage CRUD |
+| `mall_month_reports` | SELECT | SELECT / INSERT / UPDATE / DELETE |
+| `mall_lifecycle_reports` | SELECT (no published data yet) | CRUD |
+| `mall_private_month_archives` | DENIED | CRUD |
+| `mall_admins` | DENIED | SELECT own membership |
+| `mall-order-source` private bucket | DENIED | CRUD |
 
-**Important:** Users with the link can view analytics; this is not company-only network access. Never publish individual order files or the private archive JSON as `mall_month_reports.report`. The `report` payload must be derived data only: monthly totals, daily totals, category aggregates, SKU-level totals, and the published new-product metrics needed for the graphs. For the lifecycle page, publish computed results to `mall_lifecycle_reports` without exposing raw files.
+The frontend ships only the Supabase project URL and **publishable** key. Never put service-role/secret keys in GitHub Pages. All writes require Supabase Auth plus membership in `mall_admins`; CSS visibility is not an authorization boundary.
 
-The static GitHub Pages website may embed only the Supabase **project URL** and **publishable key**. Never embed a secret/service-role key. Admin authorization is a Supabase Auth identity plus an explicit entry in `public.mall_admins`; ordinary authenticated users are not admins. Creating an account or changing its email does not grant writes.
+## First historical publication
 
-## Activation checklist
+The database was created empty. Existing files live in the administrator's original browser until migrated. In that same browser open [Data Management](https://beaver123-sketch.github.io/mall-lifecycle-sop/#data), sign in at `cloud-admin.html` if needed, and click **一键同步本地历史数据**. The migration copies original file blobs to private Storage if still present, private parsed rows to `mall_private_month_archives`, and sanitized month aggregates to `mall_month_reports`. Months already published are skipped to avoid accidental overwrite; partially published archives can be retried.
 
-1. Confirm which Supabase organization owns the database and quote/approve the creation cost. Create the project in the agreed region.
-2. Apply `supabase/migrations/20261103_shared_mall_dashboard.sql` to the new project.
-3. Verify all public tables have RLS. Check anon SELECT and denied anon INSERT/UPDATE/DELETE on both public report tables and private archives.
-4. Enroll a real administrator in Supabase Auth and use the dashboard SQL editor to insert only that user's **auth.users.id** into `mall_admins`. Do not expose this action to the website.
-5. Point the existing dashboard at the new project with its publishable key, leaving the old browser data untouched until all migration checks pass.
-6. On the admin browser, migrate each stored month to the private archive and publish a sanitized month report. Build/publish quarterly lifecycle result snapshots. Store original Excel/CSV files only in the private Storage bucket.
-7. Verify in a clean incognito browser: report tables readable without login, private archives/files denied, analysis pages and charts show real data, and no upload/edit controls can write.
-8. Verify the authenticated admin can upload, replace and clear one selected month's data without affecting another month's archives; verify reset/password protections.
-9. Ensure public read never falls back to a viewer's stale local archives. Publish should report sync failures and never silently claim the latest data was shared.
-10. Only then enable cloud-first mode in GitHub Pages and announce that sharing is live.
+No backend has access to the previous browser's IndexedDB before this button is clicked. Visitors will see an empty month until the corresponding cloud report is published. They can refresh or switch to an available month after publication.
 
-## Current behavior
+## Verification
 
-The production site remains **local-first** until Supabase project, identity setup, and end-to-end testing are complete. Prepared SQL is not executed just by committing it to GitHub. The files above are implementation scaffolding, not proof of cloud deployment.
+- `public.mall_month_reports`, `mall_private_month_archives`, `mall_admins`, and `mall_lifecycle_reports` have RLS enabled.
+- SQL security advisory check initially found no warnings.
+- Role grants: `anon` has SELECT only on public reports and no INSERT or private archive SELECT.
+- GitHub Actions browser test runs with a fake cloud backend (not live production writes). It verifies monthly updates, history migration, independent viewer read-only rendering, and direct delete.
+- After the actual migration, check on the [Supabase Table Editor](https://supabase.com/dashboard/project/zsymjxmhomftiesmlhgk/editor) that `mall_month_reports` contains published months. Then use a different browser/incognito profile to confirm anonymous analysis and no admin controls.
+- Do not grant admin status merely because a user registered. Admin IDs must be selected from verified `auth.users` and explicitly inserted into `mall_admins`.
+
+**Warning:** URL-sharing is not strict internal-only isolation. Anyone with the link can read public aggregates. Raw uploads remain private.
