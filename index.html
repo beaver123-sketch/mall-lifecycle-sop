@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f7f9fc">
 <title>商城数据中心 · POPPO</title>
-<link rel="stylesheet" href="assets/dashboard.css?v=20261103-bulk-remove-v1">
+<link rel="stylesheet" href="assets/dashboard.css?v=20261104-cloud-v1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="assets/dashboard.js?v=20261103-bulk-remove-v1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0" defer></script>
+<script src="assets/cloud-layer.js?v=20261104-cloud-v1" defer></script>
+<script src="assets/dashboard.js?v=20261104-cloud-v1" defer></script>
 </head>
 <body>
 <div class="app">
@@ -23,7 +25,7 @@
       <nav class="nav nav-tools" aria-label="数据工具">
         <a class="nav-link" href="#data" data-page="data"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6M4 11.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span class="nav-label">数据管理</span></a>
       </nav>
-      <div class="sidebar-bottom"><span class="status-dot"></span> 本地数据空间 <span id="archiveCount">0个月</span></div>
+      <div class="sidebar-bottom"><span class="status-dot"></span> <span id="cloudLocation">云端数据空间</span> <span id="archiveCount">0个月</span></div>
     </div>
   </aside>
   <main class="main">
@@ -38,6 +40,7 @@
     </header>
     <div class="content">
       <div class="alert" id="alert" hidden role="status"></div>
+      <div class="cloud-status" id="cloudStatus" role="status">正在连接云端商城数据…</div>
       <section class="view" id="page-overview">
         <div class="page-head"><div><h1>经营总览</h1><div class="page-date" id="overviewPeriod"></div></div><div class="page-head-actions"><div class="month-navigator" role="group" aria-label="切换分析月份"><button class="month-arrow" type="button" data-month-step="-1" aria-label="上个月" title="上个月">‹</button><select class="month-picker" aria-label="选择历史月份"></select><button class="month-arrow" type="button" data-month-step="1" aria-label="下个月" title="下个月">›</button></div><button class="button light" id="exportSummary" type="button">导出月报</button></div></div><div class="month-empty" hidden>该月暂无订单数据。<button type="button" data-goto="data">前往数据管理</button></div>
         <div class="metric-grid" id="overviewMetrics"></div>
@@ -86,6 +89,12 @@
       </section>
       <section class="view" id="page-data" hidden>
         <div class="page-head"><div><h1>数据管理</h1><div class="page-date" id="dataPeriod"></div></div><div class="head-actions"><a class="button light" href="cloud-admin.html">云端管理员</a><button class="button light" id="backup" type="button">导出备份</button><button class="button light" id="restoreButton" type="button">恢复备份</button></div></div>
+        <section class="cloud-migrate" id="cloudMigrate" hidden>
+          <div><strong>本地历史数据尚未同步</strong><p id="cloudMigrateDescription">只需在曾经上传订单的这台电脑上操作一次，即可让同事查看历史分析。</p></div>
+          <button class="button primary" id="syncLocalCloud" type="button">一键同步本地历史数据</button>
+        </section>
+        <div id="viewerDataPanel" class="cloud-viewer-panel" hidden>共享数据已启用。当前为只读访问，可以查看经营总览、新品分析和设计方向；如需上传或修改，请先<a href="cloud-admin.html">验证管理员身份</a>。</div>
+        <div id="adminDataControls">
         <div class="two-cols data-cols">
           <div class="panel">
             <div class="panel-head"><h2>订单数据</h2><button class="button clear-month" id="clearMonthFiles" type="button" disabled title="清空当前月份上传的所有文件">清空本月文件</button></div>
@@ -109,6 +118,7 @@
             <div class="issues" id="issues"></div>
             <div class="action-row"><button class="button light" id="goLifecycle" type="button">查看动态上下架</button></div>
           </div>
+        </div>
         </div>
       </section>
       <section class="view" id="page-lifecycle" hidden>
