@@ -105,9 +105,33 @@
     },{onConflict:'platform'});
     fail('保存座驾分级定价及历史排除配置',error);
   }
+  async function listDesignHistory() {
+    if(!client)throw Error('云端服务尚未初始化');
+    return fetchPaged('mall_design_history_entries',
+      'entry_id,platform,category,sku_id,name,design_object,theme,elements,status,notes,created_at,updated_at');
+  }
+  async function putDesignHistory(entry) {
+    requireAdmin();
+    const payload={
+      platform:entry.platform,category:entry.category,sku_id:entry.sku_id||null,
+      name:entry.name,design_object:entry.design_object||'',theme:entry.theme||'',
+      elements:entry.elements||[],status:entry.status||'待设计',notes:entry.notes||'',
+      updated_at:new Date().toISOString()
+    };
+    if(entry.entry_id)payload.entry_id=entry.entry_id;
+    const {error}=await client.from('mall_design_history_entries').upsert(payload,
+      {onConflict:entry.entry_id?'entry_id':'platform,category,sku_id'});
+    fail('保存历史设计记录',error);
+  }
+  async function removeDesignHistory(entryId) {
+    requireAdmin();
+    const {error}=await client.from('mall_design_history_entries').delete().eq('entry_id',entryId);
+    fail('删除手动登记的历史设计',error);
+  }
   root.MallCloud=Object.freeze({
     init,refresh,putArchive,putReport,removeReport,uploadSource,removeSources,
     listDesignTags,putDesignTag,removeDesignTag,listRideSettings,putRideSettings,
+    listDesignHistory,putDesignHistory,removeDesignHistory,
     get isAdmin(){return isAdmin},
     get user(){return user}
   });
