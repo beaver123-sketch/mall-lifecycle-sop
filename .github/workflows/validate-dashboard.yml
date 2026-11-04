@@ -11,7 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check dashboard JavaScript
-        run: node --check assets/dashboard.js
+        run: |
+          node --check assets/dashboard.js
+          node --check assets/design-direction.js
+          node --check assets/cloud-layer.js
       - name: Check required pages
         run: |
           test -s index.html
@@ -45,6 +48,9 @@ jobs:
               'putReport:async(platform,period,report)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.reports??={};s.reports[platform+"|"+period]={platform,period,report};save(s)},',
               'removeReport:async(platform,period)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.reports?.[platform+"|"+period];save(s)},',
               'uploadSource:async(file,platform)=>{if(!'+admin+')throw Error("guest denied");return platform+"/"+file.name},',
+              'listDesignTags:async()=>Object.values(read().tags||{}),',
+              'putDesignTag:async(tag)=>{if(!'+admin+')throw Error("guest denied");const s=read();s.tags??={};s.tags[tag.platform+"|"+tag.category+"|"+tag.sku_id]=tag;save(s)},',
+              'removeDesignTag:async(p,c,id)=>{if(!'+admin+')throw Error("guest denied");const s=read();delete s.tags?.[p+"|"+c+"|"+id];save(s)},',
               'removeSources:async()=>{if(!'+admin+')throw Error("guest denied")}',
               '};',
               '})();'
@@ -61,6 +67,25 @@ jobs:
               ].join(String.fromCharCode(10));
               await page.locator('#fileInput').setInputFiles({name:'mall-test.csv',mimeType:'text/csv',buffer:Buffer.from(csv,'utf8')});
               await page.waitForFunction(()=>document.querySelector('#archiveCount')?.textContent.includes('1个月'),null,{timeout:20000});
+              // One brief represents a full four-category theme set, not one independent SKU.
+              await page.locator('a[data-page="design"]').click();
+              await page.waitForFunction(()=>document.querySelectorAll('#designRecommendCards .dd-card').length===4,null,{timeout:10000});
+              if(await page.locator('#designRecommendCards .dd-variants').count()!==4)throw Error('Expected four coordinated theme sets');
+              if(await page.locator('#designRecommendCards .dd-variant').count()!==16)throw Error('Each theme set must contain avatar frame, profile card, party background and chat bubble');
+              if(await page.locator('#designRecommendCards .dd-card:first-child .dd-tags span').count()!==5)throw Error('Theme set must have five shared visual keywords');
+              await page.locator('#designTagsPanel summary').click();
+              await page.locator('#designUntagged [data-sku="1398"]').click();
+              await page.locator('#designTagTheme').fill('奇幻');
+              await page.locator('#designTagStyles').fill('奢华');
+              await page.locator('#designTagElements').fill('龙、黄金');
+              await page.locator('#designTagSave').click();
+              await page.waitForFunction(()=>document.querySelector('#designTagCount')?.textContent.includes('1 条标签'),null,{timeout:10000});
+              if(!(await page.locator('#designThemeRows').innerText()).includes('奇幻'))throw Error('Design theme analysis must use saved cloud tags');
+              await page.locator('#designRecommendCat').selectOption('vehicle');
+              if(await page.locator('#designRecommendCards .dd-variants').count())throw Error('Rides must not be grouped with 4-piece theme set');
+              if(await page.locator('#designRecommendCards .dd-vehicle').count()!==4)throw Error('Expected independent ride briefs');
+              await page.locator('#designRecommendCat').selectOption('set');
+              await page.locator('a[data-page="overview"]').click();
               // Month archive navigation shared by overview, new arrivals and design.
               if(await page.locator('#page-overview .month-picker').inputValue()!=='2026-10')throw Error('Overview initial month should match imported data');
               await page.locator('#page-overview [data-month-step="1"]').click();
@@ -235,6 +260,9 @@ jobs:
               await guest.locator('a[data-page="data"]').click();
               if(await guest.locator('#adminDataControls').isVisible())throw Error('Guest can see private data controls');
               if(!(await guest.locator('#viewerDataPanel').isVisible()))throw Error('Guest must see read-only access');
+              await guest.locator('a[data-page="design"]').click();
+              if(await guest.locator('#designRecommendCards .dd-card').count()!==4)throw Error('Guest cannot see shared design direction');
+              if(await guest.locator('#designTagsPanel').isVisible())throw Error('Guest should not have design tag editor');
               await guestContext.close();
               await page.locator('a[data-page="overview"]').click();
               console.log('PASS: cloud analytics sharing, guest read-only access, month isolation, and direct deletion.');
