@@ -65,18 +65,7 @@ const SETS=[
  kind:'set',name,theme,palette,keywords:keywordText.split(','),idea,
  variants:Object.fromEntries(SET_CATS.map((cat,i)=>[cat,details[i]])),effect:details[4]
 }));
-const RIDES=[
- ['曜夜幻翼','科技','曜黑 × 冰蓝','黑金超跑,机械羽翼,蓝色尾焰,金属反光,速度','未来感黑金超跑从高空俯冲，机械羽翼展开并降落于镜头前，突出真实金属感。','俯冲、机械羽翼展开、甩尾定格'],
- ['沙漠黄金征服者','奢华','亮金 × 沙褐','黄金越野车,沙丘,沙尘,金属光泽,力量','黄金越野车冲坡腾跃后落地甩尾，以车体品质和冲击力为重点。','冲坡、腾跃、落地甩尾'],
- ['龙脊御风','奇幻','赤金 × 墨黑','黄金巨龙,龙首,龙鳞,云海,风暴','整条黄金巨龙穿云盘旋而至，在前景停留，突出龙身比例与鳞片质感。','穿云、盘旋、龙眼点亮'],
- ['星穹独角兽','奇幻','银白 × 星蓝','独角兽,星河,银白,蓝水晶,羽翼','独角兽从星云穿行落地，水晶与羽翼的细节随运动渐次点亮。','星际奔跑、羽翼舒展、停驻'],
- ['曜金飞舟','奢华','鎏金 × 深蓝','悬浮飞舟,黄金浮雕,月轮,流云,光轨','镶嵌宝石的悬浮飞舟掠过云端，在月轮前停驻，设计重点是飞舟结构。','掠过云层、光轨、悬停'],
- ['赤焰凤凰战车','奇幻','赤金 × 深红','凤凰,赤金战车,火羽,熔金,火焰','火羽形成战车尾翼，金属车身从赤焰中冲出，强调非塑料材质。','火羽展开、冲刺、焰光收束'],
- ['月神银翼','科技','银白 × 浅蓝','银翼飞行器,月轮,水晶核心,尾迹,流线外壳','银白飞行器沿月轮轨道滑翔后悬停，视觉高端而非复杂机械堆积。','滑翔、银翼展开、悬停'],
- ['沙海幻影','奢华','铂金 × 琥珀','沙漠跑车,琥珀宝石,金属切面,沙流,光线','铂金跑车从沙海疾驰而来，琥珀光泽沿车身切面滚动。','沙海冲刺、扬尘、刹车定格']
-].map(([name,theme,palette,keywordText,idea,effect])=>({
- kind:'vehicle',name,theme,palette,keywords:keywordText.split(','),idea,effect
-}));
+const RIDES=window.MallRideEngine?.catalog||[];
 const escape=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Math.round(Number(n)||0).toLocaleString('zh-CN');
 const dollars=n=>(Number(n||0)/1000).toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2});
@@ -161,33 +150,38 @@ function recLabel(t,data){
 }
 function makeRecommendations(data){
  const mode=$('designRecommendCat').value,count=Math.max(1,Math.min(8,Number($('designRecommendCount').value)||4));
- let items=(mode==='vehicle'?RIDES:SETS).slice().sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
+ const base=mode==='vehicle'?(window.MallRideEngine?.eligible(RIDES)||[]):SETS;
+ let items=base.slice().sort((a,b)=>candidateScore(b,data)-candidateScore(a,data));
+ if(!items.length)return [];
  const start=round*2%items.length;items=items.slice(start).concat(items.slice(0,start));
  return items.slice(0,count).map(t=>({...t,evidence:recLabel(t,data)}));
 }
 function renderRecommendations(data){
  const mode=$('designRecommendCat').value;
+ const engine=window.MallRideEngine;
+ engine?.renderVisibility();
  $('designRecommendCountTitle').textContent=mode==='vehicle'?'座驾款数':'主题套数';
  const suffix=mode==='vehicle'?'款':'套';
  Array.from($('designRecommendCount').options).forEach(o=>o.textContent=o.value+' '+suffix);
  selected=makeRecommendations(data);
  $('designRecommendCards').classList.toggle('dd-rides',mode==='vehicle');
  $('designRecommendCards').innerHTML=selected.map((r,i)=>{
-  const type=r.kind==='set'?'主题套装 · 四品类':'独立座驾';
+  const type=r.kind==='set'?'主题套装 · 四品类':'独立座驾 · 具备载具属性';
   const parts=r.kind==='set'?'<div class="dd-variant-heading">同一主题下的四个品类设计</div><div class="dd-variants">'+SET_CATS.map(cat=>
    '<div class="dd-variant"><strong>'+escape(cat)+'</strong><p>'+escape(r.variants[cat])+'</p></div>'
-  ).join('')+'</div>':'<div class="dd-vehicle"><strong>座驾独立设计</strong><p>'+escape(r.idea)+'</p></div>';
+  ).join('')+'</div>':engine.card(r);
   return '<article class="dd-card"><div class="dd-card-top"><span class="dd-index">'+String(i+1).padStart(2,'0')+'</span>'+
    '<span class="dd-category">'+type+'</span><span class="dd-evidence '+r.evidence.cls+'">'+escape(r.evidence.name)+'</span></div>'+
-   '<h3>'+escape(r.name)+'</h3><div class="dd-palette">统一配色：'+escape(r.palette)+'</div>'+
+   '<h3>'+escape(r.name)+'</h3><div class="dd-palette">'+(r.kind==='set'?'统一配色：':'配色：')+escape(r.palette)+'</div>'+
    '<div class="dd-tags">'+r.keywords.map(k=>'<span>'+escape(k)+'</span>').join('')+'</div>'+
    (r.kind==='set'?'<p class="dd-idea">'+escape(r.idea)+'</p>':'')+parts+
-   '<div class="dd-effect"><b>'+(r.kind==='set'?'套装动效方向':'登场动效')+'</b> '+escape(r.effect)+'</div>'+
+   (r.kind==='set'?'<div class="dd-effect"><b>套装动效方向</b> '+escape(r.effect)+'</div>':'')+
    '<div class="dd-proof"><strong>历史销量参考</strong><p>'+escape(r.evidence.info)+'</p></div></article>';
- }).join('');
+ }).join('')||(mode==='vehicle'?'<div class="dd-empty">已制作记录与候选库完成排重后暂无可推荐的新座驾。请补充不重复的新设计对象。</div>':'');
  const supported=selected.filter(r=>r.evidence.cls!=='idea').length;
- $('designRecommendNotice').textContent='已生成 '+selected.length+(mode==='set'?' 套统一主题装扮（每套包含头像框、资料卡、派对背景、聊天气泡，共 '+(selected.length*4)+' 个品类设计）':' 款独立座驾设计')+
-  '。其中 '+supported+' 个方向关联到已标注历史销量；无样本的方案会明确标为创意候选。';
+ $('designRecommendNotice').textContent='已生成 '+selected.length+(mode==='set'?' 套统一主题装扮（每套包含头像框、资料卡、派对背景、聊天气泡，共 '+(selected.length*4)+' 个品类设计）':' 款独立载具设计（严格区分普通商品礼物）')+
+  '。其中 '+supported+' 个方向关联到已标注历史销量；无样本的方案会明确标为创意候选。'+
+  (mode==='vehicle'?' 座驾按 5–6s / 7–8s / 9–10s 三档制作与售卖；未配置的真实价格明确留空。':'');
 }
 function allProducts(){
  const map=new Map();
@@ -244,15 +238,21 @@ async function saveTag(){
 }
 function downloadCsv(){
  if(!selected.length)return;
- const headers=['方案类型','主题名称','品类','设计题材','统一配色','核心关键词','统一设计构想','该品类设计说明','动效方向','销售判断','历史销售依据'];
+ const vehicle=selected[0]?.kind==='vehicle';
+ const headers=vehicle?
+  ['方案类型','设计名称','品类','设计对象','设计类型','设计题材','配色','核心关键词','载具结构','设计要求','等级','时长档位','精确时长','金币售价','荣誉券售价','分段动画说明','销售判断','历史销售依据']:
+  ['方案类型','主题名称','品类','设计题材','统一配色','核心关键词','统一设计构想','该品类设计说明','动效方向','销售判断','历史销售依据'];
  const rows=[headers];
  selected.forEach(r=>{
   if(r.kind==='set')SET_CATS.forEach(cat=>rows.push(['主题套装',r.name,cat,r.theme,r.palette,r.keywords.join(' / '),r.idea,r.variants[cat],r.effect,r.evidence.name,r.evidence.info]));
-  else rows.push(['独立座驾',r.name,'座驾',r.theme,r.palette,r.keywords.join(' / '),r.idea,r.idea,r.effect,r.evidence.name,r.evidence.info]);
+  else {
+   const [grade,duration,total,coin,ticket,kind,object,structure,requirements,scenes]=window.MallRideEngine.exportRow(r);
+   rows.push(['独立座驾',r.name,'座驾',object,kind,r.theme,r.palette,r.keywords.join(' / '),structure,requirements,grade,duration,total,coin,ticket,scenes,r.evidence.name,r.evidence.info]);
+  }
  });
  const blob=new Blob(['\uFEFF'+rows.map(row=>row.map(csv).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
- a.download='商城设计提需_'+ctx.platform+'_'+ctx.period+'_'+(selected[0]?.kind==='set'?'四品类主题套装':'座驾')+'.csv';
+ a.download='商城设计提需_'+ctx.platform+'_'+ctx.period+'_'+(vehicle?'座驾分档动画':'四品类主题套装')+'.csv';
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
 $('designRecommendCat').addEventListener('change',()=>{round=0;renderAll()});
@@ -271,9 +271,11 @@ $('designTagList').addEventListener('click',async e=>{
  try{await window.MallCloud.removeDesignTag(ctx.platform,del.dataset.deleteCat,del.dataset.deleteSku);await loadTags()}
  catch(err){$('designTagProductName').textContent='删除失败：'+err.message;del.disabled=false}
 });
+window.addEventListener('mall:ride-refresh',()=>{if(ctx)renderAll()});
 window.addEventListener('mall:design-render',e=>{
  const changed=!ctx||ctx.platform!==e.detail.platform||ctx.period!==e.detail.period;
  ctx=e.detail;if(changed)round=0;
+ window.MallRideEngine?.setContext(ctx);
  renderAll();if(!loaded&&!loading)loadTags();
 });
 })();
