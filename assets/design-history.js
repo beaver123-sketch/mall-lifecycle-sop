@@ -139,6 +139,7 @@ function buildUI(){
 }
 function setPane(p){
  pane=p==='history'?'history':'brief';
+ $('page-design').classList.toggle('dd-history-mode',pane==='history');
  $('designBriefWorkspace').hidden=pane!=='brief';
  $('designHistoryWorkspace').hidden=pane!=='history';
  document.querySelectorAll('[data-history-pane]').forEach(el=>el.classList.toggle('is-active',el.dataset.historyPane===pane));
